@@ -50,15 +50,6 @@ nup:
 ndown:
 	docker compose -f ./nginx/docker-compose.yml down
 
-# nginx swarm
-.PHONY: nsup
-nsup:
-	docker stack deploy -c ./nginx-swarm/docker-compose.yml nginx -d
-
-.PHONY: nsdown
-nsdown:
-	docker stack rm nginx
-
 .PHONY: redis-up
 redis-up:
 	docker compose -p redis -f ./redis/single/docker-compose.yml up -d

@@ -9,7 +9,6 @@ Personal local development sandbox — docker compose recipes for the services S
 | 目录 | 用途 |
 |---|---|
 | `nginx/` | 本地 https 反代（`dev.smartdata.local`），转发到 host 上跑的 SmartData admin / dbweb / dbgate |
-| `nginx-swarm/` | 同上但 swarm 模式（一般不用） |
 | `db/` | 30 种数据库的 compose 配方：MySQL/PG/Oracle/DM/达梦/TiDB/Hive/ClickHouse/MongoDB/ZooKeeper 等。每个子目录独立 |
 | `ai/` | AI 工具栈：n8n / langflow / ollama / openwebui / vllm / context7-mcp |
 | `redis/` | 三种拓扑：`single/` / `sentinel/` / `cluster/` |
@@ -19,7 +18,7 @@ Personal local development sandbox — docker compose recipes for the services S
 | `dbmanager/` | dbmanager 服务侧 compose |
 | `sso/` | 老 UCC SSO 栈（保留） |
 | `smartfs/` | smartfs UI |
-| `mqtt/` `minio/` `traefik/` `portainer/` | 杂项基础设施 |
+| `mqtt/` `minio/` `traefik/` | 杂项基础设施 |
 | `docs/` | 本仓内部文档 |
 
 ## Quickstart
