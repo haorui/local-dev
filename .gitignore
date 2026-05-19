@@ -24,10 +24,28 @@ logs
 .env.*
 !.env.example
 
-./vault/vault/config/local.json
-./vault/vault/config/vault.hcl
-./vault/vault/config/vault.mysql.hcl
+# Runtime sockets / pids
+*.sock
+*.pid
 
-# Database and Service Data
-db/hive/hive_data/
-db/zookeeper/data/
+# Container runtime state (per-service data dirs, never commit)
+db/**/data/
+db/**/hive_data/
+dns/**/data/
+kerberos/data/
+
+# Local SSL — regenerate with mkcert per developer
+**/selfsigned.key
+**/selfsigned.crt
+
+# License test artifacts
+dbmanager/license/tar*/
+dbmanager/license/encrypted.*
+
+# Compiled JARs (driver / plugin binaries — fetched/built, not source)
+*.jar
+
+# Vault local config (may contain tokens)
+vault/vault/config/local.json
+vault/vault/config/vault.hcl
+vault/vault/config/vault.mysql.hcl
