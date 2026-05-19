@@ -16,10 +16,7 @@ Personal local development sandbox — docker compose recipes for the services S
 | `kerberos/` | KDC，给 hive2/hive3 鉴权测试用 |
 | `vault/` | HashiCorp Vault 开发模式 |
 | `dbmanager/` | dbmanager 服务侧 compose |
-| `sso/` | 老 UCC SSO 栈（保留） |
-| `smartfs/` | smartfs UI |
-| `mqtt/` `minio/` `traefik/` | 杂项基础设施 |
-| `docs/` | 本仓内部文档 |
+| `archive/` | 已弃用栈的归档：`sso/`（老 UCC SSO）/ `smartfs/` / `mqtt/` / `minio/` / `traefik/` / `docs/`（redis 旧文档） |
 
 ## Quickstart
 
@@ -71,24 +68,15 @@ docker compose -f ai/ollama/docker-compose.yml up -d
 docker compose -f ai/langflow/docker-compose.yml up -d
 ```
 
-### 老 UCC SSO 栈
+### 起 dbmanager 后端
 
 ```sh
-make ssoup / make ssodown
-make dbup  / make dbdown       # 对应 dbmanager 后端
-make file-up / make file-down  # smartfs
-```
-
-需要在 `/etc/hosts`：
-
-```
-127.0.0.1 sso.devlocal.com
-127.0.0.1 platform.devlocal.com
+make dbup / make dbdown
 ```
 
 ## Makefile 目标
 
-`makefile` 只 wire 了高频组合（nginx / sso / dbmanager / smartfs / redis 三种 / mqtt）。其他服务直接走 `docker compose -f <path>` 即可，不需要每个都加 target。
+`makefile` 只 wire 了三组高频栈：`nginx`（nup/ndown）/ `dbmanager`（dbup/dbdown）/ `redis` 三种拓扑（redis-up/redis-sentinel-up/redis-cluster-up + 对应 down）。其他服务直接走 `docker compose -f <path>` 即可。
 
 ## 约定
 
@@ -110,4 +98,4 @@ make file-up / make file-down  # smartfs
 
 ## 历史
 
-- 2026-05-19：从 `ucc-workspace` 重命名为 `local-dev`，重写 README，整理 gitignore（运行时 state / jar / SSL key / license 产物）
+- 2026-05-19：从 `ucc-workspace` 重命名为 `local-dev`，重写 README，整理 gitignore（运行时 state / jar / SSL key / license 产物），归档 `nginx-swarm` + `portainer` + `sso` + `smartfs` + `mqtt` + `minio` + `traefik` + `docs`（最后 6 个落 `archive/`，前 2 个直接删）
