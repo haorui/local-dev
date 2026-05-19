@@ -1,0 +1,18 @@
+services:
+  mssql2022:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    restart: unless-stopped
+    ports:
+      - "15002:1433"
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: "Developer"
+      MSSQL_SA_PASSWORD: "Pwd2026Db"
+      TZ: Asia/Shanghai
+    user: root
+    volumes:
+      - mssql2022-data:/var/opt/mssql
+
+volumes:
+  mssql2022-data:

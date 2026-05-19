@@ -1,0 +1,31 @@
+services:
+  pg:
+    image: postgres:15.7-alpine
+    ports:
+      - "15000:5432"
+    shm_size: 128mb
+    restart: unless-stopped
+    networks:
+      - dev_db_network
+    environment:
+      - PGDATA=/var/lib/postgresql/data/pgdata
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+      - POSTGRES_NON_ROOT_USER
+      - POSTGRES_NON_ROOT_PASSWORD
+      - TZ=Asia/Shanghai
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  dev_db_network:
+    external: true
+volumes:
+  postgres_data:

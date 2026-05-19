@@ -1,0 +1,80 @@
+services:
+  # HDFS: NameNode（来自 docker-hive 示例）
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
+    container_name: namenode-hive2
+    hostname: namenode-hive2
+    env_file:
+      - ./hadoop-hive.env
+    volumes:
+      - namenode-hive2:/hadoop/dfs/name
+      - ../../kerberos/client/krb5.conf.container:/etc/krb5.conf:ro
+      - ../../kerberos/data/keytabs/nn-namenode-hive2.keytab:/etc/security/keytabs/nn.keytab:ro
+      - ../../kerberos/data/keytabs/http-namenode-hive2.keytab:/etc/security/keytabs/http.keytab:ro
+    environment:
+      - CLUSTER_NAME=hive2
+      - HADOOP_OPTS=-Djava.security.krb5.conf=/etc/krb5.conf
+    networks:
+      - dev_db_network
+    ports:
+      - "50070:50070"
+
+  # HDFS: DataNode（来自 docker-hive 示例）
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
+    container_name: datanode-hive2
+    hostname: datanode-hive2
+    volumes:
+      - datanode-hive2:/hadoop/dfs/data
+      - ../../kerberos/client/krb5.conf.container:/etc/krb5.conf:ro
+      - ../../kerberos/data/keytabs/dn-datanode-hive2.keytab:/etc/security/keytabs/dn.keytab:ro
+    environment:
+      SERVICE_PRECONDITION: "namenode-hive2:50070"
+      HADOOP_OPTS: -Djava.security.krb5.conf=/etc/krb5.conf
+    env_file:
+      - ./hadoop-hive.env
+    networks:
+      - dev_db_network
+    ports:
+      - "50075:50075"
+
+  # HiveServer2：使用内嵌 Metastore（直接连外部 PostgreSQL），仅依赖 HDFS + Postgres
+  hiveserver2:
+    image: bde2020/hive:2.3.2-postgresql-metastore
+    container_name: hiveserver2-hive2
+    hostname: hiveserver2-hive2
+    # 添加 extra_hosts 映射，确保 zoo1.test.com 解析到正确的 ZK 容器 IP（172.18.0.7）
+    extra_hosts:
+      - "zoo1.test.com:172.18.0.7"
+    environment:
+      SERVICE_NAME: hiveserver2
+      # 等待 Zookeeper（单节点）和外部 PostgreSQL 就绪（namenode 依赖已注释，移除等待）
+      SERVICE_PRECONDITION: "pgvector:5432 zoo1:2181"
+      # 指定 krb5.conf 和 JAAS 配置文件；ZK 客户端使用 'HiveZooKeeperClient' login context
+      # 启用 ZooKeeper SASL 客户端认证
+      HADOOP_OPTS: "-Djava.security.krb5.conf=/etc/krb5.conf -Djava.security.auth.login.config=/opt/hive/conf/zk_client_jaas.conf -Dzookeeper.sasl.client=true -Dzookeeper.sasl.clientconfig=HiveZooKeeperClient"
+    env_file:
+      - ./hadoop-hive.env
+    volumes:
+      - ../../kerberos/client/krb5.conf.container:/etc/krb5.conf:ro
+      - ../../kerberos/data/keytabs/hive.keytab:/opt/hive/conf/hive.keytab:ro
+      - ./conf/hive-log4j2.properties:/opt/hive/conf/hive-log4j2.properties:ro
+      - ./zk_client_jaas.conf:/opt/hive/conf/zk_client_jaas.conf:ro
+      - ./jars/hive-service-2.3.2.jar:/opt/hive/lib/hive-service-2.3.2.jar:ro
+      - ./data/hive-warehouse:/user/hive/warehouse
+    ports:
+      - "10020:10020"
+    networks:
+      - dev_db_network
+    depends_on:
+      - namenode
+      - datanode
+    restart: unless-stopped
+
+networks:
+  dev_db_network:
+    external: true
+
+volumes:
+  namenode-hive2:
+  datanode-hive2:

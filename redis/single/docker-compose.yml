@@ -1,0 +1,19 @@
+services:
+  service:
+    image: redis:7.2-alpine3.18
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    restart: always
+    networks:
+      - dev_db_network
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - data:/data
+
+volumes:
+  data:
+
+networks:
+  dev_db_network:
+    external: true

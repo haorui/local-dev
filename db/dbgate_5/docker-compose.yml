@@ -1,0 +1,44 @@
+services:
+  dbgate5:
+    image: dbgate/dbgate:5.3.4-alpine
+    # image: dbgate/dbgate:7.0.1-alpine
+    restart: unless-stopped
+    ports:
+      - 3302:3000
+    volumes:
+      - dbgate-data:/root/.dbgate
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1024M
+        reservations:
+          memory: 200M
+    #environment:
+    #CONNECTIONS: con1,con2,con3,con4
+
+    #LABEL_con1: MySql
+    #SERVER_con1: mysql
+    #USER_con1: root
+    #PASSWORD_con1: TEST
+    #PORT_con1: 3306
+    #ENGINE_con1: mysql@dbgate-plugin-mysql
+
+    #LABEL_con2: Postgres
+    #SERVER_con2: postgres
+    #USER_con2: postgres
+    #PASSWORD_con2: TEST
+    #PORT_con2: 5432
+    #ENGINE_con2: postgres@dbgate-plugin-postgres
+
+    #LABEL_con3: MongoDB
+    #URL_con3: mongodb://mongo:27017
+    #ENGINE_con3: mongo@dbgate-plugin-mongo
+
+    #LABEL_con4: SQLite
+    #FILE_con4: /home/jan/feeds.sqlite
+    #ENGINE_con4: sqlite@dbgate-plugin-sqlite
+
+volumes:
+  dbgate-data:
+    driver: local

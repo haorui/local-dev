@@ -1,0 +1,55 @@
+services:
+  metastore3:
+    image: apache/hive:3.1.3
+    platform: linux/amd64
+    container_name: metastore3
+    hostname: metastore3
+    networks:
+      - hive3net
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: derby
+      SERVICE_OPTS: "-Djavax.jdo.option.ConnectionURL=jdbc:derby:/opt/hive/data/metastore_db;create=true"
+    ports:
+      - "9183:9083"
+    volumes:
+      - ./hive_data:/opt/hive/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9083"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  hiveserver3:
+    image: apache/hive:3.1.3
+    platform: linux/amd64
+    user: "root"
+    container_name: hiveserver3
+    hostname: hiveserver3
+    networks:
+      - hive3net
+    environment:
+      SERVICE_NAME: hiveserver2
+      SERVICE_OPTS: "-Dhive.metastore.uris=thrift://metastore3:9083"
+      IS_RESUME: "true"
+      HIVE_CUSTOM_CONF_DIR: /hive_custom_conf
+      HIVE_AUTH_USER: hive
+      HIVE_AUTH_PASSWORD: hive123
+    ports:
+      - "10100:10000"
+      - "10102:10002"
+    volumes:
+      - ./hive_data:/opt/hive/data
+      - ./conf:/hive_custom_conf:ro
+      - ./jars/hive-auth.jar:/opt/hive/lib/hive-auth.jar:ro
+    depends_on:
+      metastore3:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  hive3net:
+    name: hive3net
+    driver: bridge

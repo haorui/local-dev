@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  service:
+    image: dbeaver/cloudbeaver:latest
+    container_name: cloudbeaver
+    ports:
+      - "8978:8978"
+    volumes:
+      - cloudbeaver_data:/opt/cloudbeaver/workspace
+    extra_hosts:
+      - "host.docker.internal:${CB_LOCAL_HOST_ADDR}"
+
+volumes:
+  cloudbeaver_data:

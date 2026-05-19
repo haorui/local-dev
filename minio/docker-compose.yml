@@ -1,0 +1,33 @@
+services:
+  # myapp:
+  #   image: my-app-image
+  #   environment:
+  #     - S3_ENDPOINT_URL=http://minio:9000
+  #     - S3_ACCESS_KEY=minio-root-user
+  #     - S3_SECRET_KEY=minio-root-password
+  #     - S3_BUCKET=my-bucket
+  #   networks:
+  #     - my-network
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=minio-admin
+      - MINIO_ROOT_PASSWORD=minio-admin
+    ports:
+      # 9000 S3 API
+      - "9000:9000"
+      # Web UI
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - dev_db_network
+
+networks:
+  dev_db_network:
+    external: true
+
+volumes:
+  minio-data:

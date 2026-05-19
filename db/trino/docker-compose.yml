@@ -1,0 +1,24 @@
+services:
+  trino:
+    image: trinodb/trino:454
+    container_name: trino_454
+    restart: unless-stopped
+    ports:
+      - "4454:8080"
+      - "4455:8443"
+    environment:
+      - CATALOG_MANAGEMENT=dynamic
+      - JAVA_TOOL_OPTIONS=-Xmx2G
+    volumes:
+      - ./etc:/etc/trino
+    networks:
+      - dev_db_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/v1/info"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+networks:
+  dev_db_network:
+    external: true

@@ -1,0 +1,17 @@
+services:
+  oceanbase:
+    image: oceanbase/oceanbase-ce:4.2.1-lts
+    restart: unless-stopped
+    ports:
+      - "2881:2881"
+    environment:
+      MODE: mini
+      OB_MEMORY_LIMIT: 8G
+      OB_SYS_PASSWORD: ob12345
+      OB_TENANT_PASSWORD: ob12345
+    volumes:
+      - oceanbase_data:/root/ob
+      - oceanbase_config:/root/.obd/cluster
+volumes:
+  oceanbase_data:
+  oceanbase_config:

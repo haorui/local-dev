@@ -1,0 +1,29 @@
+services:
+  smartfs-ui:
+    image: workspace-smartfs-ui
+    build:
+      context: ../../smartfs-ui
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3004:80"
+    # environment:
+    # - VUE_APP_SSO_URL=http://sso.devlocal.com
+    # - VUE_APP_SSO_REDIRECT_URL=http://file.devlocal.com/callback
+    # - VUE_APP_SSO_LOGOUT_URL=http://file.devlocal.com/logout-success
+    # - VUE_APP_FILE_URL=https://file.devlocal.com/upload
+    # - VUE_APP_PLATFORM_URL=http://platform.dataleapinfo.com/api
+    # - VUE_APP_SSO_URL=https://117.50.213.146:8453
+    # - VUE_APP_SSO_REDIRECT_URL=https://117.50.213.146:8443/file/callback
+    # - VUE_APP_SSO_LOGOUT_URL=https://117.50.213.146:8443/file/logout-success
+    # - VUE_APP_FILE_URL=https://file.dataleapinfo.com/upload
+    # - VUE_APP_PLATFORM_URL=https://platform.dataleapinfo.com/api
+    volumes:
+      - type: bind
+        source: ../../smartfs-ui
+        target: /app
+      - type: volume
+        source: ui_node_modules
+        target: /app/node_modules
+
+volumes:
+  ui_node_modules:

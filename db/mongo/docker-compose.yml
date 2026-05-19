@@ -1,0 +1,14 @@
+services:
+  mongo:
+    image: mongo:6.0.14-jammy
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: Pwd2026Db
+    restart: unless-stopped
+    volumes:
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:

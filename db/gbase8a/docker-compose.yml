@@ -1,0 +1,8 @@
+services:
+  gbase8a:
+    image: shihd/gbase8a:1.0
+    ports:
+      - "5258:5258"
+    hostname: gbase8a
+    restart: unless-stopped
+    privileged: true

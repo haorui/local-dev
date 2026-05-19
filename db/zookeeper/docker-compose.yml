@@ -1,0 +1,34 @@
+services:
+  # 单节点 ZooKeeper（简化配置，便于调试 HS2 + ZK + Kerberos 集成）
+  # 注意：单节点模式不适用于生产环境，但完全满足测试/开发需求
+  # 使用 ZooKeeper 3.5.10（3.4.13 启动有问题，暂时回退）
+  # 注意：3.4.13 容器不断重启，可能是启动脚本或配置不兼容问题
+  zoo1:
+    image: zookeeper:3.5.10
+    restart: unless-stopped
+    hostname: zoo1
+    container_name: zookeeper-zoo1-1
+    ports:
+      - 2181:2181
+    environment:
+      # 启用 SASL AuthenticationProvider（临时禁用用于创建节点）
+      ZOO_AUTH_PROVIDER_1: org.apache.zookeeper.server.auth.SASLAuthenticationProvider
+      # 要求客户端使用 SASL 认证（临时禁用，用于调试连接稳定性）
+      # ZOO_REQUIRE_CLIENT_AUTH_SCHEME: sasl
+      # JVM 参数：指定 JAAS 配置和 krb5.conf（临时注释）
+      JVMFLAGS: "-Djava.security.auth.login.config=/conf/zk_server_jaas.conf -Djava.security.krb5.conf=/etc/krb5.conf"
+    networks:
+      - dev_db_network
+    volumes:
+      - ./data/zoo1/data:/data
+      - ./data/zoo1/datalog:/datalog
+      # 挂载自定义 zoo.cfg（包含 authProvider.1 配置）
+      - ./conf/zoo.cfg:/conf/zoo.cfg:ro
+      # Kerberos 相关卷挂载
+      - ../../kerberos/client/krb5.conf.container:/etc/krb5.conf:ro
+      - ../../kerberos/data/keytabs/zoo1.keytab:/etc/security/keytabs/zookeeper.keytab:ro
+      - ./conf/zk_server_jaas_zoo1.conf:/conf/zk_server_jaas.conf:ro
+
+networks:
+  dev_db_network:
+    external: true

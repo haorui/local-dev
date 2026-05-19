@@ -1,0 +1,27 @@
+{
+	"hardware": [
+		{
+			"name": "cpu",
+			"desc": "cpu监控",
+			"threshold": "0-90"
+		},
+		{
+			"name": "mem",
+			"desc": "系统内存",
+			"threshold": "0-90"
+		},
+		{
+			"name": "disc",
+			"desc": "系统磁盘使用",
+			"threshold": "0-90"
+		}
+	],
+	"server": [
+		{
+			"ip": "192.168.3.123",
+			"name": "dbapi",
+			"desc": "后台服务api",
+			"port": "8084"
+		}
+	]
+}

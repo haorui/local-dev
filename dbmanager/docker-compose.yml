@@ -1,0 +1,130 @@
+services:
+  # dbmanager-web:
+  #   image: workspace-dbmanager
+  #   container_name: dbmanager_web
+  #   build:
+  #     context: ../../dbmanager/
+  #     dockerfile: Dockerfile.dev
+  #   networks:
+  #     - dev_db_network
+  #   ports:
+  #     - "3013:3013"
+  #   # extra_hosts:
+  #   #   - "db.devlocal.com:${CONTAINER_LOCAL_IP}"
+  #   volumes:
+  #     - type: bind
+  #       source: ../../dbmanager
+  #       target: /app
+  #     - type: volume
+  #       source: dbmanager_node_modules
+  #       target: /app/node_modules
+
+  # shardingsphere-proxy:
+  #   image: apache/shardingsphere-proxy:5.5.2
+  #   container_name: shardingsphere_proxy
+  #   # Custom entrypoint to enable the Agent
+  #   entrypoint: ["/bin/bash", "-c"]
+  #   command:
+  #     - |
+  #       cd /opt/shardingsphere-proxy
+  #       AGENT_JAR=/opt/shardingsphere-proxy/agent/shardingsphere-agent-5.5.2.jar
+  #       exec java -javaagent:$$AGENT_JAR -Djava.awt.headless=true -Xmx2g -Xms2g \
+  #         -classpath "/opt/shardingsphere-proxy/conf:/opt/shardingsphere-proxy/lib/*:/opt/shardingsphere-proxy/ext-lib/*" \
+  #         org.apache.shardingsphere.proxy.Bootstrap -1 /opt/shardingsphere-proxy/conf 0.0.0.0 false
+  #   ports:
+  #     - "3307:3307"
+  #   networks:
+  #     - dev_db_network
+  #     - sharding_net
+  #   environment:
+  #     - TZ=Asia/Shanghai
+  #     - SMARTDATA_REDIS_HOST=${REDIS_HOST}
+  #     - SMARTDATA_REDIS_PORT=${REDIS_PORT}
+  #     - SMARTDATA_REDIS_PASSWORD=${REDIS_PASSWORD}
+  #     # Default ttl 30s
+  #     # - SMARTDATA_CACHE_TTL=${SMARTDATA_CACHE_TTL}
+  #   volumes:
+  #     # Permission plugin JAR (ext-lib for SPI)
+  #     - ../../smartdata/smartdata-shardingsphere-plugin/target/smartdata-shardingsphere-plugin-2.0.0.jar:/opt/shardingsphere-proxy/ext-lib/smartdata-shardingsphere-plugin-2.0.0.jar
+  #     # Agent plugin JAR - mount to logging directory to be loaded as logging-type plugin
+  #     - ../../smartdata/smartdata-shardingsphere-agent/target/smartdata-shardingsphere-agent-2.0.0.jar:/opt/shardingsphere-proxy/agent/plugins/logging/smartdata-shardingsphere-agent-2.0.0.jar
+  #     # JDBC drivers
+  #     - ~/.smartdata/jdbc-lib/mysql-connector-j-8.3.0.jar:/opt/shardingsphere-proxy/ext-lib/mysql-connector-j-8.3.0.jar
+  #     # Config files
+  #     - ./shardingsphere-conf/global.yaml:/opt/shardingsphere-proxy/conf/global.yaml
+  #     - ./shardingsphere-conf/agent.yaml:/opt/shardingsphere-proxy/agent/conf/agent.yaml
+  #     # Logging config for DEBUG
+  #     - ./shardingsphere-conf/logback.xml:/opt/shardingsphere-proxy/conf/logback.xml
+
+  smartdata-admin:
+    container_name: smartdata_admin
+    build:
+      context: ../../smartdata/
+      dockerfile: .ci/docker/smartdata-admin.Dockerfile
+    ports:
+      - "8084:8084"
+    networks:
+      - dev_db_network
+    environment:
+      - TZ=Asia/Shanghai
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_NAME=smartdata_dev
+      - db_password=${DB_PASSWORD}
+      # redis single
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # sso
+      - SSO_URL=${SSO_URL}
+      - SSO_CLEAR_PATH=${SSO_URL}/token/revocation
+      - APP_DOMAIN=
+      - APP_TITLE=${DB_APP_TITLE}
+      - APP_SHORT_TITLE=${DB_APP_SHORT_TITLE}
+      - CID=${UNIQUE_ID}
+      - JUMPER_URL=${JUMPER_URL}
+    volumes:
+      - ${HOME}/.smartdata/plugins/:/root/.smartdata/plugins/
+      - ./license:/app/smartdb/license
+      - ./monitor.json:/app/smartdb/monitor.json
+      - server_data:/app/smartdb
+      - server_logs:/data/smartdb/logs
+    secrets:
+      - db_password
+
+  # zookeeper:
+  #   image: zookeeper:3.8.3
+  #   container_name: shardingsphere_zookeeper
+  #   ports:
+  #     - "2182:2181"
+  #   networks:
+  #     - sharding_net
+  #   volumes:
+  #     - zoo_logs:/logs
+  #     - zoo_data:/data
+  #     - zoo_datalog:/datalog
+
+volumes:
+  dbmanager_node_modules:
+  server_data:
+  server_logs:
+  zoo_data:
+  zoo_datalog:
+  zoo_logs:
+
+networks:
+  dev_db_network:
+    external: true
+  dev_sso_network:
+    external: true
+  redis:
+    external: true
+  sharding_net:
+    driver: bridge
+
+secrets:
+  db_password:
+    # external: true
+    file: ./db_password

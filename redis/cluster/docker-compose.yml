@@ -1,0 +1,102 @@
+services:
+  redis-node-1:
+    image: redis:7.2-alpine3.18
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    container_name: redis-node-1
+    restart: always
+    ports:
+      - "7100:7000"
+    environment:
+      - REDIS_PASSWORD=Zonesec2024.
+    volumes:
+      - ./redis-conf/redis-7000.conf:/usr/local/etc/redis/redis.conf
+      - redis-cluster-7000:/data
+    networks:
+      - redis-cluster
+
+  redis-node-2:
+    image: redis:7.2-alpine3.18
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    container_name: redis-node-2
+    restart: always
+    ports:
+      - "7101:7001"
+    environment:
+      - REDIS_PASSWORD=Zonesec2024.
+    volumes:
+      - ./redis-conf/redis-7001.conf:/usr/local/etc/redis/redis.conf
+      - redis-cluster-7001:/data
+    networks:
+      - redis-cluster
+
+  redis-node-3:
+    image: redis:7.2-alpine3.18
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    container_name: redis-node-3
+    restart: always
+    ports:
+      - "7102:7002"
+    environment:
+      - REDIS_PASSWORD=Zonesec2024.
+    volumes:
+      - ./redis-conf/redis-7002.conf:/usr/local/etc/redis/redis.conf
+      - redis-cluster-7002:/data
+    networks:
+      - redis-cluster
+
+  redis-node-4:
+    image: redis:7.2-alpine3.18
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    container_name: redis-node-4
+    restart: always
+    ports:
+      - "7103:7003"
+    environment:
+      - REDIS_PASSWORD=Zonesec2024.
+    volumes:
+      - ./redis-conf/redis-7003.conf:/usr/local/etc/redis/redis.conf
+      - redis-cluster-7003:/data
+    networks:
+      - redis-cluster
+
+  redis-node-5:
+    image: redis:7.2-alpine3.18
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    container_name: redis-node-5
+    restart: always
+    ports:
+      - "7104:7004"
+    environment:
+      - REDIS_PASSWORD=Zonesec2024.
+    volumes:
+      - ./redis-conf/redis-7004.conf:/usr/local/etc/redis/redis.conf
+      - redis-cluster-7004:/data
+    networks:
+      - redis-cluster
+
+  redis-node-6:
+    image: redis:7.2-alpine3.18
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    container_name: redis-node-6
+    restart: always
+    ports:
+      - "7105:7005"
+    environment:
+      - REDIS_PASSWORD=Zonesec2024.
+    volumes:
+      - ./redis-conf/redis-7005.conf:/usr/local/etc/redis/redis.conf
+      - redis-cluster-7005:/data
+    networks:
+      - redis-cluster
+
+networks:
+  redis-cluster:
+    driver: bridge
+
+volumes:
+  redis-cluster-7000:
+  redis-cluster-7001:
+  redis-cluster-7002:
+  redis-cluster-7003:
+  redis-cluster-7004:
+  redis-cluster-7005:

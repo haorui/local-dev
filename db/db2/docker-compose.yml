@@ -1,0 +1,36 @@
+services:
+  db2:
+    image: icr.io/db2_community/db2:11.5.9.0
+    platform: linux/amd64
+    privileged: true
+    restart: unless-stopped
+    networks:
+      - dev_db_network
+    ports:
+      - "50000:50000"
+    environment:
+      LICENSE: accept
+      DB2INST1_PASSWORD: db2inst1
+      DBNAME: testdb
+      TO_CREATE_SAMPLEDB: "false"
+      REPODB: "false"
+      IS_OSXFS: "false"
+      PERSISTENT_HOME: "true"
+      HADR_ENABLED: "false"
+      AUTOCONFIG: "false"
+    volumes:
+      - db2-data:/database
+    healthcheck:
+      # First boot can take 5–10 minutes before the instance is reachable.
+      test: ["CMD-SHELL", "su - db2inst1 -c 'db2 connect to testdb' | grep -q 'Connection successful'"]
+      interval: 30s
+      timeout: 10s
+      retries: 20
+      start_period: 600s
+
+networks:
+  dev_db_network:
+    external: true
+
+volumes:
+  db2-data:

@@ -1,0 +1,18 @@
+services:
+  reverse-proxy:
+    image: traefik:v3.1.2
+    command:
+      - --api.insecure=true
+      - --providers.docker
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  whoami:
+    image: traefik/whoami
+    labels:
+      - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
+      - "traefik.http.routers.whoami.service=whoami"
+      - "traefik.http.services.whoami.loadbalancer.server.port=80"

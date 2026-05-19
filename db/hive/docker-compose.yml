@@ -1,0 +1,46 @@
+services:
+  metastore4:
+    image: apache/hive:4.2.0
+    container_name: metastore4
+    hostname: metastore4
+    networks:
+      - dev_db_network
+    environment:
+      SERVICE_NAME: metastore
+      SERVICE_OPTS: "-Djavax.jdo.option.ConnectionURL=jdbc:derby:/opt/hive/data/metastore_db;create=true"
+    ports:
+      - "9083:9083"
+    volumes:
+      - ./hive_data:/opt/hive/data
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9083"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  hiveserver4:
+    image: apache/hive:4.2.0
+    user: "root"
+    container_name: hiveserver4
+    hostname: hiveserver4
+    networks:
+      - dev_db_network
+    environment:
+      SERVICE_NAME: hiveserver2
+      SERVICE_OPTS: "-Dhive.metastore.uris=thrift://metastore4:9083"
+      IS_RESUME: "true"
+    ports:
+      - "10000:10000"
+      - "10002:10002"
+    volumes:
+      - ./hive_data:/opt/hive/data
+    depends_on:
+      metastore4:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  dev_db_network:
+    external: true

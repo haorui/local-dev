@@ -1,0 +1,11 @@
+services:
+  tidb:
+    image: pingcap/tidb:v7.5.3
+    restart: unless-stopped
+    ports:
+      - "4001:4000"
+      - "10081:10080"
+    volumes:
+      - ${PWD}/data:/tmp/tidb
+# volumes:
+#   mysql_data:

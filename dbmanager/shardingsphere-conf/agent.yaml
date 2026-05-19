@@ -1,0 +1,27 @@
+plugins:
+  logging:
+#    # Official File logging plugin
+#    File:
+#      props:
+#        level: "DEBUG"
+    # SmartData Permission plugin
+    SmartData:
+      # props:
+      #  redis.host: "localhost"
+      #  redis.port: "6379"
+      #  redis.password: ""
+
+#  metrics:
+#    SmartData:
+#      props:
+#        smartdata.db.url: "${SMARTDATA_DB_URL}"
+#        smartdata.db.user: "${SMARTDATA_DB_USER}"
+#        smartdata.db.password: "${SMARTDATA_DB_PASSWORD}"
+
+#  tracing:
+#    OpenTelemetry:
+#      props:
+#        otel.service.name: "shardingsphere"
+#        otel.traces.exporter: "jaeger"
+#        otel.traces.sampler: "always_on"
+#        otel.exporter.otlp.traces.endpoint: "http://localhost:14250"

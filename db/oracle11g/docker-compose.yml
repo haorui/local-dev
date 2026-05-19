@@ -1,0 +1,17 @@
+services:
+  oracle:
+    image: gvenzl/oracle-xe:11-slim
+    container_name: oracle11g
+    platform: linux/amd64
+    restart: unless-stopped
+    shm_size: "2gb"
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=Pwd2026Db
+      - ORACLE_DATABASE=XE
+    volumes:
+      - oracle-11g-data:/opt/oracle/oradata
+
+volumes:
+  oracle-11g-data:

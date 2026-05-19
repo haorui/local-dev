@@ -1,0 +1,25 @@
+services:
+  mysql5:
+    image: mysql:5.7.44
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=123456
+    networks:
+      - dev_db_network
+    volumes:
+      - data:/var/lib/mysql
+    healthcheck:
+      test: "mysql -h127.0.0.1 -P$$DB_PORT -uroot -p$$MYSQL_ROOT_PASSWORD -e 'SHOW DATABASES;'"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  dev_db_network:
+    external: true
+
+volumes:
+  data:

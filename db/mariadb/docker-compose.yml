@@ -1,0 +1,30 @@
+services:
+  mariadb:
+    image: mariadb:11.4
+    restart: unless-stopped
+    networks:
+      - dev_db_network
+    ports:
+      - "15004:3306"
+    environment:
+      - MARIADB_ROOT_PASSWORD=Pwd2026Db
+      - MARIADB_DATABASE=test
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    healthcheck:
+      test: "healthcheck.sh --connect --innodb_initialized"
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+networks:
+  dev_db_network:
+    external: true
+
+volumes:
+  mariadb-data:

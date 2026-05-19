@@ -1,0 +1,82 @@
+services:
+  server:
+    image: workspace-ucc-server-prod
+    build:
+      context: ../../ucc-server/
+      dockerfile: Dockerfile
+    init: true
+    environment:
+      - CLIENT_ID=6548e1f8dff21aa6f65e159d
+      - CLIENT_SECRET=1f0b227643425d4a439379d927b66794
+      - DATABASE_URL=mysql://dbsun:@Sun12345@8.134.215.8:3306/ucc
+      - DATABASE_PLATFROM_URL=mysql://dbsun:@Sun12345@8.134.215.8:3306/platform
+      - PUBLIC_OIDC_ISSUER=http://sso.devlocal.com
+      - PUBLIC_FILE_URL=https://platform.dataleapinfo.com/api
+      - REDIS_TYPE=sentinel
+      - REDIS_NAME=mymaster
+      - REDIS_SENTINELS=[{"host":"172.31.1.11","port":26379},{"host":"172.31.1.12","port":26379},{"host":"172.31.1.13","port":26379}]
+      - REDIS_PASSWORD=redis-123456
+      - REDIS_DB=0
+      - PORT=3000
+    networks:
+      - uccserver
+      - redis_local
+    extra_hosts:
+      - "platform.devlocal.com:${CONTAINER_LOCAL_IP}"
+      - "sso.devlocal.com:${CONTAINER_LOCAL_IP}"
+    ports:
+      - "3001:3000"
+
+  ucc-web:
+    image: workspace-ucc-web-prod
+    build:
+      context: ../../ucc-web
+      dockerfile: Dockerfile
+    ports:
+      - "3005:3000"
+      - "24678:24678"
+    environment:
+      - NUXT_REDIS_TYPE=sentinel
+      - NUXT_REDIS_SENTINEL_OPTION_NAME=mymaster
+      - 'NUXT_REDIS_SENTINEL_OPTION_SENTINELS=[{"host":"172.31.1.11","port":26379},{"host":"172.31.1.12","port":26379},{"host":"172.31.1.13","port":26379}]'
+      - NUXT_REDIS_SENTINEL_OPTION_PASSWORD=redis-123456
+      - NUXT_REDIS_SENTINEL_OPTION_DB=0
+    networks:
+      - uccserver-local
+      - redis-local
+    extra_hosts:
+      - "platform.devlocal.com:${CONTAINER_LOCAL_IP}"
+      - "sso.devlocal.com:${CONTAINER_LOCAL_IP}"
+
+  platform-web:
+    image: workspace-platform-web-prod
+    build:
+      context: ../../platform-web
+      dockerfile: Dockerfile
+    ports:
+      - "3002:80"
+    configs:
+      - source: nginx-confd
+        target: /etc/nginx/conf.d/default.conf
+        mode: 0444
+    environment:
+      - VITE_SSO_URL=http://sso.devlocal.com
+      - VITE_SSO_REDIRECT_URL=http://platform.devlocal.com/callback
+      - VITE_SSO_LOGOUT_REDIRECT_URL=http://platform.devlocal.com/logout-success
+      - VITE_APP_TITLE = 数跃信息认证中心Dataleapinfo
+      - VITE_APP_SHORT_TITLE = 数跃信息
+    networks:
+      - uccserver
+    extra_hosts:
+      - "platform.devlocal.com:${CONTAINER_LOCAL_IP}"
+      - "sso.devlocal.com:${CONTAINER_LOCAL_IP}"
+
+networks:
+  uccserver:
+    external: true
+  redis_local:
+    external: true
+
+configs:
+  nginx-confd:
+    file: ./nginx/prod/default.conf

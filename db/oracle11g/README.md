@@ -1,0 +1,5 @@
+- Host: localhost
+- Port: 1521
+- SID: XE
+- SYS / SYSTEM 密码: oracle
+- JDBC URL: jdbc:oracle:thin:@localhost:1521:XE

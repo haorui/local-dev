@@ -1,0 +1,26 @@
+
+services:
+  krb5-kdc-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: krb5-kdc-server
+    hostname: krb5-kdc-server
+    networks:
+      - dev_db_network
+    volumes:
+      - ./data/krb5kdc:/var/lib/krb5kdc
+      - ./data/krb5kdc-etc:/etc/krb5kdc
+      - ./data/keytabs:/keytabs
+    ports:
+      # 将宿主机 8800 映射到容器内 88 端口（KDC 默认端口）
+      - "8800:88/tcp"
+      - "8800:88/udp"
+      # 可选：kadmind 管理端口对外访问
+      - "8749:749/tcp"
+    restart: unless-stopped
+
+
+networks:
+  dev_db_network:
+    external: true

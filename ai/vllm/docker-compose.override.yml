@@ -1,0 +1,23 @@
+services:
+  vllm:
+    deploy:
+      resources:
+        limits:
+          cpus: "${VLLM_CPUS}"
+          memory: "${VLLM_MEMORY}"
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "30"
+    restart: always
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:${VLLM_PORT}/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5

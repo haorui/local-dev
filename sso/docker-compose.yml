@@ -1,0 +1,169 @@
+services:
+  server:
+    image: workspace-ucc-server
+    container_name: ucc_server_service
+    build:
+      context: ../../ucc-server/
+      dockerfile: Dockerfile.dev
+    init: true
+    networks:
+      - dev_sso_network
+      - redis
+    environment:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PWD}
+      - PUBLIC_OIDC_ISSUER=${SSO_URL}
+      # - PUBLIC_OIDC_PREFIX=/sso
+      - PUBLIC_FILE_URL=https://192.168.3.123/api
+      # - PUBLIC_FILE_URL=http://platform_admin:8082
+      # - REDIS_TYPE=sentinel
+      # - REDIS_NAME=mymaster
+      # - REDIS_SENTINELS=[{"host":"172.31.1.11","port":26379},{"host":"172.31.1.12","port":26379},{"host":"172.31.1.13","port":26379}]
+      # - REDIS_PASSWORD=redis-123456
+      # - REDIS_DB=0
+      - REDIS_TYPE=single
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      - SELF_SIGNED_CERTIFICATE=1
+    # networks:
+    #   - uccserver-local
+    #   - redis-local
+    # extra_hosts:
+    #   - "platform.devlocal.com:${CONTAINER_LOCAL_IP}"
+    #   - "sso.devlocal.com:${CONTAINER_LOCAL_IP}"
+    ports:
+      - "3001:80"
+    volumes:
+      - type: bind
+        source: ../../ucc-server/
+        target: /usr/src/app
+      - type: volume
+        source: server_node_modules
+        target: /usr/src/app/node_modules
+
+  ucc-web:
+    image: workspace-ucc-web
+    container_name: ucc_web
+    build:
+      context: ../../ucc-web
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3005:3000"
+      - "24678:24678"
+    networks:
+      - dev_sso_network
+      - redis
+    environment:
+      - NUXT_PUBLIC_BASE_URL=/web
+      - NUXT_PUBLIC_SSO_URI=${SSO_URL}
+      # - "NUXT_PUBLIC_ADMIN_URL=http://ucc-server-service"
+      # - NUXT_REDIS_TYPE=sentinel
+      # - NUXT_REDIS_SENTINEL_OPTION_NAME=mymaster
+      # - 'NUXT_REDIS_SENTINEL_OPTION_SENTINELS=[{"host":"172.31.1.11","port":26379},{"host":"172.31.1.12","port":26379},{"host":"172.31.1.13","port":26379}]'
+      # - NUXT_REDIS_SENTINEL_OPTION_PASSWORD=redis-123456
+      # - NUXT_REDIS_SENTINEL_OPTION_DB=0
+      - NUXT_REDIS_TYPE=single
+      - NUXT_REDIS_OPTION_HOST=${REDIS_HOST}
+      - NUXT_REDIS_OPTION_PORT=${REDIS_PORT}
+      - NUXT_REDIS_OPTION_PASSWORD=${REDIS_PASSWORD}
+      #- NUXT_REDIS_OPTION_DB=0
+    # networks:
+    # - uccserver-local
+    # - redis-local
+    # extra_hosts:
+    #   - "platform.devlocal.com:${CONTAINER_LOCAL_IP}"
+    #   - "sso.devlocal.com:${CONTAINER_LOCAL_IP}"
+    volumes:
+      - type: bind
+        source: ../../ucc-web/
+        target: /app
+      - type: volume
+        source: ucc_web_node_modules
+        target: /app/node_modules
+      - ucc_web_nuxt:/app/.nuxt
+
+  platform-admin:
+    # image: workspace-platform
+    image: registry.dataleapinfo.com:8443/zonesec/platform-admin:ed8ba4e-20250212120405-41
+    container_name: platform-admin-service
+    # build:
+    #   context: ../../platform/.workflow/
+    #   dockerfile: Dockerfile
+    ports:
+      - "8082:8085"
+    networks:
+      - dev_sso_network
+      - redis
+    environment:
+      - TZ=Asia/Shanghai
+      - JAVA_OPTS=-Xms512m -Xmx1024m
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - db_password=${DB_PWD}
+      #
+      # redis single
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # - REDIS_PASSWORD=/run/secrets/redis_password
+      #
+      # redis sentinel
+      # - REDIS_NAME=${REDIS_NAME}
+      # - REDIS_SENTINELS=${REDIS_SENTINELS}
+      # - REDIS_PASSWORD=/run/secrets/redis_password
+      # - REDIS_DB=${REDIS_DB}
+      # mail
+      # - MAIL_HOST=${MAIL_HOST}
+      # - MAIL_PORT=${MAIL_PORT}
+      # - MAIL_USER=${MAIL_USER}
+      # - MAIL_PWD=${MAIL_PWD}
+      # sso
+      # - SSO_URL=${SSO_URL}
+      - SSO_URL=http://ucc_server_service
+    volumes:
+      - admin_data:/data/applications
+      - admin_logs:/data/logs
+    #configs:
+    #  - source: monitor.json
+    #  target: /app/smartdb/monitor.json
+    #  mode: 0444
+
+  platform-web:
+    image: workspace-platform-web
+    container_name: platform_web
+    build:
+      context: ../../platform-web
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3002:3002"
+    networks:
+      - dev_sso_network
+    # extra_hosts:
+    #   - "platform.devlocal.com:${CONTAINER_LOCAL_IP}"
+    #   - "sso.devlocal.com:${CONTAINER_LOCAL_IP}"
+    volumes:
+      - type: bind
+        source: ../../platform-web
+        target: /app
+      - type: volume
+        source: platform_node_modules
+        target: /app/node_modules
+
+networks:
+  dev_sso_network:
+    driver: bridge
+    external: true
+  redis:
+    external: true
+
+volumes:
+  server_node_modules:
+  platform_node_modules:
+  ucc_web_node_modules:
+  ucc_web_nuxt:
+  admin_data:
+  admin_logs:

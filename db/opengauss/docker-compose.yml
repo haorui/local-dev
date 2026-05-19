@@ -1,0 +1,12 @@
+services:
+  opengauss:
+    image: opengauss/opengauss:5.0.0
+    restart: unless-stopped
+    ports:
+      - "5632:5432"
+    environment:
+      GS_PASSWORD: Opengauss@123
+      TZ: Asia/Shanghai
+    volumes:
+      - ${PWD}/data:/var/lib/opengauss/data
+    privileged: true

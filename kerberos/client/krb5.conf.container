@@ -1,0 +1,29 @@
+[logging]
+default = FILE:/var/log/krb5libs.log
+kdc = FILE:/var/log/krb5kdc.log
+admin_server = FILE:/var/log/kadmind.log
+
+[libdefaults]
+default_realm = TEST.COM
+default_ccache_name = FILE:/tmp/krb5cc_cli_%{uid}
+dns_lookup_realm = false
+dns_lookup_kdc = false
+ticket_lifetime = 24h
+renew_lifetime = 7d
+forwardable = true
+udp_preference_limit = 1
+ # 只使用 aes128（与之前可以工作的配置一致）
+ default_tkt_enctypes = aes128-cts
+ default_tgs_enctypes = aes128-cts
+ permitted_enctypes   = aes128-cts
+ # 关闭基于反向 DNS 的主机名规范化，避免 zookeeper-zooX-1.dev_db_network 影响服务主体，
+ # 让 GSS 优先使用我们在配置中写的主机名（zoo1/zoo2/zoo3），从而使用 zookeeper/zooX@TEST.COM 主体。
+ rdns = false
+[realms]
+TEST.COM = {
+  # 容器内部使用容器网络地址访问 KDC
+  # - 容器网络：krb5-kdc-server:88
+  # - 强制使用 TCP 协议
+  kdc = krb5-kdc-server:88
+  admin_server = krb5-kdc-server:749
+}

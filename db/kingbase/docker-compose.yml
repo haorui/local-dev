@@ -1,0 +1,13 @@
+services:
+  kingbase:
+    image: kseleven/kingbase:v1.0.3
+    ports:
+      - "54321:54321"
+    privileged: true
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - ${PWD}/opt/data:/opt/kingbase/data/
+      - ${PWD}/opt/archive:/opt/Kingbase/ES/V8/archive/
+      - ${PWD}/opt/license.dat:/opt/Kingbase/ES/V8/license/license.dat

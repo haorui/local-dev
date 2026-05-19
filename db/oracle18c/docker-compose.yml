@@ -1,0 +1,17 @@
+services:
+  oracle:
+    image: gvenzl/oracle-xe:18-slim
+    container_name: oracle-xe18
+    privileged: true
+    restart: unless-stopped
+    ports:
+      - "1521:1521"
+    environment:
+      - ORACLE_PASSWORD=Pwd2026Db
+    volumes:
+      - oracle-volume:/opt/oracle/oradata
+      - oracle-logs:/opt/oracle/logs
+
+volumes:
+  oracle-volume:
+  oracle-logs:

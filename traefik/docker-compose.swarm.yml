@@ -1,0 +1,35 @@
+services:
+  traefik:
+    image: "traefik:v3.1"
+    command:
+      - "--api=true"
+      - "--log.level=DEBUG"
+      - "--providers.swarm.exposedByDefault=false"
+      - "--providers.swarm.network=dbserver"
+      - "--providers.docker=true"
+      # - '--providers.docker.endpoint=tcp://127.0.0.1:2375'
+      # - '--providers.docker.endpoint=unix:///var/run/docker.sock'
+      - "--entrypoints.web.address=:8080"
+      - "--entrypoints.web.forwardedHeaders.trustedIPs=0.0.0.0/0"
+    ports:
+      - "8080:8080"
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  whoami:
+    image: "traefik/whoami"
+    deploy:
+      replicas: 2
+      update_config:
+        order: start-first
+        failure_action: rollback
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.whoami.rule=Host(`whoami.localhost`)"
+        - "traefik.http.services.whoami.loadbalancer.server.port=8080"
+        - "traefik.http.services.whoami.loadbalancer.sticky=true"
+        - "traefik.http.services.whoami.loadbalancer.sticky.cookie.name=whoami_cookie"

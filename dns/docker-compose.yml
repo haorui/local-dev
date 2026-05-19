@@ -1,0 +1,24 @@
+services:
+  # AdGuard Home: 网络 DNS 守门员
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+    restart: always
+    networks:
+      - backend
+    ports:
+      # DNS 端口 (必须映射到宿主机的 53 端口)
+      - "53:53/tcp"
+      - "53:53/udp"
+      # 管理后台端口 (初始化用 3000，后续通常用 80 或自定义)
+      - "3001:3000"
+      - "8080:80/tcp"
+    volumes:
+      - ./adguard_work:/opt/adguardhome/work
+      - ./adguard_conf:/opt/adguardhome/conf
+    environment:
+      - TZ=Asia/Shanghai
+
+networks:
+  backend:
+    driver: bridge

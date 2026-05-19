@@ -1,0 +1,15 @@
+services:
+  pg:
+    image: polardb/polardb_pg_local_instance:15
+    ports:
+      - "5532:5432"
+    shm_size: 512m
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: postgres123
+      TZ: Asia/Shanghai
+    volumes:
+      - ${PWD}/data:/home/postgres/PolarDB-for-PostgreSQL
+    privileged: true
+    cap_add:
+      - SYS_PTRACE
