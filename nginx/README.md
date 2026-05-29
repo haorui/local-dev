@@ -2,14 +2,7 @@
 
 把 host 上跑的 SmartData / dbmanager / dbgate 统一挂到 `https://dev.smartdata.local`。
 
-| 路径 | 上游（host） |
-|------|----------------|
-| `/dbapi/system/notifications/stream` | `host.docker.internal:8084`（SSE，`proxy_buffering off`） |
-| `/dbapi/` | `host.docker.internal:8084`（smartdata admin） |
-| `/db/` | `host.docker.internal:3013`（dbmanager） |
-| `/mcp-smartdata/` | `host.docker.internal:3010`（smartdata-mcp，可选） |
-
-配置见 `conf.d/default.conf`，`server_name` 为 `dev.smartdata.local`。
+完整的服务 / 路径 / 端口拓扑见 `../README.md` 的「服务拓扑」表（SSOT）。本文件只讲 nginx 反代本身的配置与证书；路由的权威定义在 `conf.d/default.conf`，`server_name` 为 `dev.smartdata.local`。
 
 ## 前置
 

@@ -18,6 +18,27 @@ Personal local development sandbox — docker compose recipes for the services S
 | `dbmanager/` | dbmanager 服务侧 compose |
 | `archive/` | 已弃用栈的归档：`sso/`（老 UCC SSO）/ `smartfs/` / `mqtt/` / `minio/` / `traefik/` / `docs/`（redis 旧文档） |
 
+## 服务拓扑 (dev.smartdata.local)
+
+> **本表是本地开发拓扑的唯一事实源（SSOT）。** smartdata / dbmanager 等仓的 README 只指向这里，不再各自抄一份；改了下面「权威源」里的文件，回来同步本表。
+
+统一入口 `https://dev.smartdata.local`（`/etc/hosts` 指到 `127.0.0.1`，由本仓 nginx 反代）。host 上各服务由 smartdata 的 `make dev`（tmux 4-pane）一键拉起。
+
+| 服务 | 访问路径 | host 端口 | 启动方式 |
+|------|----------|-----------|----------|
+| dbmanager（管理前端） | `/db/`（登录 `/db/login`） | 3013 | `make dev` pane（`pnpm dev`） |
+| smartdata API | `/dbapi/` | 8084 | `make dev` pane（jar，profile=dev） |
+| 通知 SSE | `/dbapi/system/notifications/stream` | 8084 | 同 smartdata |
+| dbgate 编辑器前端 | `/dbgatex/` | 5300 | `make dev` pane（sirv） |
+| dbgate 编辑器 API | `/dbgatex/api/`（终端 `/dbgatex/api/terminal`） | 3000 | `make dev` pane（`yarn start:api`） |
+| smartdata MCP | `/mcp-smartdata/mcp` | 3010 | 可选 `make dev-smartdata-mcp` |
+
+**权威源**（本表的值从这里派生）：
+
+- 路由 / upstream → `nginx/conf.d/default.conf`（本仓）
+- 端口 / 启动 → `../smartdata/Procfile.dev` + `../smartdata/Makefile`
+- 镜像 / registry → 各仓 `.ci/jenkins/repo/*-build.Jenkinsfile`
+
 ## Quickstart
 
 ### 起 SmartData 本地反代
