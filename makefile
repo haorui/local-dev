@@ -40,3 +40,8 @@ redis-sentinel-up:
 .PHONY: redis-sentinel-down
 redis-sentinel-down:
 	docker compose -p redis-sentinel -f ./redis/sentinel/docker-compose.yml down
+
+# topology SSOT drift check (manual, low-frequency)
+.PHONY: check-topology
+check-topology:
+	@bash scripts/check-topology.sh

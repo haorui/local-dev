@@ -20,7 +20,7 @@ Personal local development sandbox — docker compose recipes for the services S
 
 ## 服务拓扑 (dev.smartdata.local)
 
-> **本表是本地开发拓扑的唯一事实源（SSOT）。** smartdata / dbmanager 等仓的 README 只指向这里，不再各自抄一份；改了下面「权威源」里的文件，回来同步本表。
+> **本表是本地开发拓扑的唯一事实源（SSOT）。** smartdata / dbmanager 等仓的 README 只指向这里，不再各自抄一份；改了下面「权威源」里的文件，回来同步本表，并跑 `make check-topology` 复核。
 
 统一入口 `https://dev.smartdata.local`（`/etc/hosts` 指到 `127.0.0.1`，由本仓 nginx 反代）。host 上各服务由 smartdata 的 `make dev`（tmux 4-pane）一键拉起。
 
