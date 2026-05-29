@@ -4,6 +4,7 @@
 
 | 路径 | 上游（host） |
 |------|----------------|
+| `/dbapi/system/notifications/stream` | `host.docker.internal:8084`（SSE，`proxy_buffering off`） |
 | `/dbapi/` | `host.docker.internal:8084`（smartdata admin） |
 | `/db/` | `host.docker.internal:3013`（dbmanager） |
 | `/mcp-smartdata/` | `host.docker.internal:3010`（smartdata-mcp，可选） |
@@ -74,6 +75,21 @@ curl -k -I -H "Host: dev.smartdata.local" https://127.0.0.1/db/
 ```
 
 应看到 SAN 含 `dev.smartdata.local`，且 `curl` 返回 `200`。
+
+### SSE 通知流（可选）
+
+登录后带 JWT 探测（应返回 `401` 无 token、`text/event-stream` 有 token 且连接保持）：
+
+```sh
+curl -k -N -H "Host: dev.smartdata.local" \
+  https://127.0.0.1/dbapi/system/notifications/stream
+
+curl -k -N -H "Host: dev.smartdata.local" \
+  -H "Authorization: Bearer <token>" \
+  https://127.0.0.1/dbapi/system/notifications/stream
+```
+
+改完 `conf.d/default.conf` 后重载 nginx：`cd .. && docker compose restart gateway` 或 `make ndown && make nup`。
 
 ### 常见问题
 
