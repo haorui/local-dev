@@ -1,6 +1,7 @@
 services:
   mysql8:
     image: mysql:8.4.3
+    mem_limit: 1g
     restart: unless-stopped
     networks:
       - dev_db_network

@@ -1,6 +1,7 @@
 services:
   dm8:
     image: onlyoffice/damengdb:8.1.3
+    mem_limit: 2g
     privileged: true
     restart: unless-stopped
     ports:
