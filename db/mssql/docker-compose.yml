@@ -2,6 +2,7 @@ services:
   mssql2022:
     image: mcr.microsoft.com/mssql/server:2022-latest
     platform: linux/amd64
+    mem_limit: 3g
     restart: unless-stopped
     ports:
       - "15002:1433"

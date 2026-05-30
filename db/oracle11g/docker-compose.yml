@@ -2,6 +2,7 @@ services:
   oracle:
     image: gvenzl/oracle-xe:11-slim
     container_name: oracle11g
+    mem_limit: 2g
     platform: linux/amd64
     restart: unless-stopped
     shm_size: "2gb"
