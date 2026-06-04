@@ -11,6 +11,7 @@ services:
     environment:
       SERVICE_NAME: metastore
       DB_DRIVER: derby
+      IS_RESUME: "true"
       SERVICE_OPTS: "-Djavax.jdo.option.ConnectionURL=jdbc:derby:/opt/hive/data/metastore_db;create=true"
     ports:
       - "9183:9083"
