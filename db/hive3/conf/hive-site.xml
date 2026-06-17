@@ -6,6 +6,14 @@
     <value>thrift://metastore3:9083</value>
   </property>
   <property>
+    <name>hive.metastore.warehouse.dir</name>
+    <value>file:///opt/hive/data/warehouse</value>
+  </property>
+  <property>
+    <name>hive.metastore.event.db.notification.api.auth</name>
+    <value>false</value>
+  </property>
+  <property>
     <name>hive.server2.authentication</name>
     <value>CUSTOM</value>
   </property>
