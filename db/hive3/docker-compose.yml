@@ -10,10 +10,14 @@ services:
       SERVICE_NAME: metastore
       DB_DRIVER: derby
       SERVICE_OPTS: "-Djavax.jdo.option.ConnectionURL=jdbc:derby:/opt/hive/data/metastore_db;create=true"
+      HIVE_CUSTOM_CONF_DIR: /hive_custom_conf
     ports:
       - "9183:9083"
+    entrypoint: ["/entrypoint-wrapper.sh"]
     volumes:
       - ./hive_data:/opt/hive/data
+      - ./conf:/hive_custom_conf:ro
+      - ./entrypoint-wrapper.sh:/entrypoint-wrapper.sh:ro
     healthcheck:
       test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/9083"]
       interval: 10s
