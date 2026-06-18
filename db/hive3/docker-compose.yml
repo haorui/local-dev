@@ -52,6 +52,7 @@ services:
       - ./hive_data:/opt/hive/data
       - ./conf:/hive_custom_conf:ro
       - ./jars/hive-auth.jar:/opt/hive/lib/hive-auth.jar:ro
+      - ./hive_data/hive-metrics1-shim.jar:/opt/hive/lib/hive-metrics1-shim.jar:ro
     depends_on:
       metastore3:
         condition: service_healthy

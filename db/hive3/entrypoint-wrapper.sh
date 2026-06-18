@@ -6,8 +6,15 @@ set -e
 DATA_DIR="${HIVE_DATA_DIR:-/opt/hive/data}"
 DB_DIR="${DATA_DIR}/metastore_db"
 
+# Hadoop 3.x compat: restore org.apache.hadoop.metrics.Updater removed in Hadoop 3.x
+# but still referenced by hive-exec MapRedTask.
+METRICS_SHIM="${DATA_DIR}/hive-metrics1-shim.jar"
+if [ -f "$METRICS_SHIM" ]; then
+  cp "$METRICS_SHIM" /opt/hive/lib/
+  echo "[entrypoint-wrapper] installed hive-metrics1-shim.jar"
+fi
+
 # Derby creates a "seg0" directory inside metastore_db once initialized.
-# If that exists, the schema is already in place — no need to re-run initSchema.
 if [ -d "${DB_DIR}/seg0" ]; then
   export IS_RESUME=true
   echo "[entrypoint-wrapper] metastore_db already initialized, skipping schema init"
