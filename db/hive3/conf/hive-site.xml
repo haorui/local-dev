@@ -40,7 +40,11 @@
   </property>
   <property>
     <name>hive.execution.engine</name>
-    <value>tez</value>
+    <value>mr</value>
+  </property>
+  <property>
+    <name>mapreduce.framework.name</name>
+    <value>local</value>
   </property>
   <property>
     <name>hive.exec.dynamic.partition.mode</name>
