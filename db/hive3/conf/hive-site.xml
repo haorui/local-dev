@@ -13,6 +13,36 @@
     <name>hive.metastore.event.db.notification.api.auth</name>
     <value>false</value>
   </property>
+  <!-- ACID transaction support -->
+  <property>
+    <name>hive.support.concurrency</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hive.txn.manager</name>
+    <value>org.apache.hadoop.hive.ql.lockmgr.DbTxnManager</value>
+  </property>
+  <property>
+    <name>hive.compactor.initiator.on</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hive.compactor.worker.threads</name>
+    <value>1</value>
+  </property>
+  <property>
+    <name>hive.create.as.insert.only</name>
+    <value>false</value>
+  </property>
+  <property>
+    <name>hive.enforce.bucketing</name>
+    <value>true</value>
+  </property>
+  <property>
+    <name>hive.exec.dynamic.partition.mode</name>
+    <value>nonstrict</value>
+  </property>
+
   <property>
     <name>hive.server2.authentication</name>
     <value>CUSTOM</value>
