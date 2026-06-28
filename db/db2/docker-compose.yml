@@ -22,7 +22,7 @@ services:
       - db2-data:/database
     healthcheck:
       # First boot can take 5–10 minutes before the instance is reachable.
-      test: ["CMD-SHELL", "su - db2inst1 -c 'db2 connect to testdb' | grep -q 'Connection successful'"]
+      test: ["CMD-SHELL", "su - db2inst1 -c 'db2 connect to testdb'"]
       interval: 30s
       timeout: 10s
       retries: 20
