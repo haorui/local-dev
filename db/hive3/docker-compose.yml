@@ -40,8 +40,7 @@ services:
       - hive3net
     environment:
       SERVICE_NAME: hiveserver2
-      SERVICE_OPTS: "-Dhive.metastore.uris=thrift://metastore3:9083"
-      HADOOP_HEAPSIZE: "2048"
+      SERVICE_OPTS: "-Dhive.metastore.uris=thrift://metastore3:9083 -Xmx2048m"
       IS_RESUME: "true"
       HIVE_CUSTOM_CONF_DIR: /hive_custom_conf
       HIVE_AUTH_USER: hive
