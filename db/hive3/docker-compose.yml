@@ -32,7 +32,7 @@ services:
   hiveserver3:
     image: apache/hive:3.1.3
     platform: linux/amd64
-    mem_limit: 2g
+    mem_limit: 3g
     user: "root"
     container_name: hiveserver3
     hostname: hiveserver3
@@ -41,6 +41,7 @@ services:
     environment:
       SERVICE_NAME: hiveserver2
       SERVICE_OPTS: "-Dhive.metastore.uris=thrift://metastore3:9083"
+      HADOOP_HEAPSIZE: "2048"
       IS_RESUME: "true"
       HIVE_CUSTOM_CONF_DIR: /hive_custom_conf
       HIVE_AUTH_USER: hive
