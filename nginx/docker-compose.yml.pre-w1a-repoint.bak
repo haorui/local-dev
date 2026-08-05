@@ -1,0 +1,32 @@
+services:
+  gateway:
+    image: nginx:1.25.3-alpine3.18
+    container_name: nginx
+    # Pin host.docker.internal to the Docker Desktop host-gateway IPv4. Without
+    # this it resolves to an unreachable IPv6 on dev_db_network, which 502s
+    # WebSocket upstreams (plain GETs recover via IPv4 fallback, WS upgrades do
+    # not retry) — e.g. the OpenClaw gateway WS dropping fresh connections.
+    extra_hosts:
+      - "host.docker.internal:192.168.65.254"
+    ports:
+      - "80:80"
+      - "443:443"
+    # environment:
+    #   - MY_VAR=${MY_VAR:-$(hostname)}
+    # command: sh -c "echo MY_VAR is $BINARY_DOWNLOAD_VERSION"
+    networks:
+      - dev_db_network
+      # - dev_sso_network
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d/
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl/
+    restart: always
+
+networks:
+  dev_db_network:
+    driver: bridge
+    external: true
+  # dev_sso_network:
+  #   driver: bridge
+  #   external: true
