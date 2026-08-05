@@ -251,14 +251,6 @@ server {
     #     proxy_set_header X-Forwarded-Proto $scheme;
     #     proxy_set_header X-Forwarded-Port $server_port;
     # }
-    # ══ leap-aide 路由已按 host 拆分(2026-08-05) ═════════════════════════
-    # prod.smartdata.local → 渲染部署(leap-aide-prod 验收栈,W1a 外层契约的
-    #   三条静态 prefix → 内层 aide-nginx),见 conf.d/prod-aide.conf。
-    # dev.smartdata.local(本 server)→ 恢复 dev-stack 直连:host 原生进程
-    #   chat-shell :3180 / admin :3280 / gateway :18789,auth_request 在本层。
-    # W1a repoint 期间(2026-08-04~05)这三条前缀曾在本 server 指向内层
-    #   aide-nginx;该形态原样迁去了 prod-aide.conf。
-    # ══ dev-stack 直连(2026-08-05 恢复) ══════════════════════════════════
     # ── leap-aide chat-shell (branded chat UI over OpenClaw) ─────────────
     # COOKIE CONTRACT: these routes depend on dbmanager's `authorized-token`
     # cookie (js-cookie default path=/, host dev.smartdata.local) being present
