@@ -251,72 +251,6 @@ server {
     #     proxy_set_header X-Forwarded-Proto $scheme;
     #     proxy_set_header X-Forwarded-Port $server_port;
     # }
-    # ══ leap-aide W1a:外层 nginx 契约实现(2026-08-04) ═══════════════════
-    # 这三条 location 原先直连 dev stack 的 host 原生进程(chat-shell :3180 /
-    # admin :3280 / gateway :18789),auth_request 也在这一层。现改为 rendered
-    # deployment 的**外层**形态:只做三条静态 prefix 代理,指向内层 aide-nginx;
-    # 动态路由、前缀剥离、auth_request 全部留在内层。
-    # 契约:leap-aide `docs/architecture/web-tier-deployment.md` §2。
-    #
-    # 一并停用的 dev-only 路由(依赖已被移走的 /aide/api/auth/check):
-    #   /aide-wt/ (Vite :5181)、/aide-wt2/ (Vite :5182)。
-    #
-    # 恢复 dev-stack 直连(两步):
-    #   cp ../default.conf.pre-w1a-repoint.bak conf.d/default.conf
-    #   cp ../docker-compose.yml.pre-w1a-repoint.bak docker-compose.yml   # 摘掉 leap-aide-edge
-    #   docker compose up -d --force-recreate gateway
-    #
-    # ⚠️ 必须请求时解析,不要用 upstream 块:aide-nginx 在 leap-aide-edge 上的
-    # 地址是动态的,内层任一次 recreate 都会换地址,upstream 块会握着过期 IP 把
-    # 整站 502(且外层先于内层启动会直接 [emerg])。
-    resolver 127.0.0.11 valid=10s;
-
-    # chat-shell SPA + /aide/api/*(SSE / WS)。不带尾斜杠 ⇒ 裸 /aide 也转发进
-    # 内层,吃到内层的 301 → /aide/。
-    location /aide {
-        set $aide_inner http://aide-nginx:80;
-        proxy_pass $aide_inner;
-        proxy_set_header Host $host;
-        proxy_set_header x-forwarded-proto $scheme;   # 覆写而非透传:TLS 在本层终结
-        proxy_set_header x-forwarded-for   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade    $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_buffering off;
-        proxy_read_timeout 3600s;
-    }
-    # admin console(最长前缀优先于 /aide)。
-    location /aide-admin {
-        set $aide_inner http://aide-nginx:80;
-        proxy_pass $aide_inner;
-        proxy_set_header Host $host;
-        proxy_set_header x-forwarded-proto $scheme;
-        proxy_set_header x-forwarded-for   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade    $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_buffering off;
-        proxy_read_timeout 3600s;
-    }
-    # 每用户 gateway(control UI / chat 全走 WS)。prefix 形式同时覆盖
-    # /leap-aide/u/<id>/ 与 control UI 自动探测的裸 /leap-aide/u/<id>。
-    # 本层不做 auth_request —— x-forwarded-user 由内层的 auth_request 产出。
-    location /leap-aide {
-        set $aide_inner http://aide-nginx:80;
-        proxy_pass $aide_inner;
-        proxy_set_header Host $host;
-        proxy_set_header x-forwarded-proto $scheme;
-        proxy_set_header x-forwarded-for   $proxy_add_x_forwarded_for;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade    $http_upgrade;
-        proxy_set_header Connection "upgrade";
-        proxy_buffering off;
-        proxy_read_timeout 3600s;
-    }
-    # ══ 以下为 W1a 之前的 dev-stack 直连形态,全部停用 ════════════════════
     # ── leap-aide chat-shell (branded chat UI over OpenClaw) ─────────────
     # COOKIE CONTRACT: these routes depend on dbmanager's `authorized-token`
     # cookie (js-cookie default path=/, host dev.smartdata.local) being present
@@ -330,95 +264,95 @@ server {
     #
     # Internal auth probe: chat-shell validates the SmartData cookie and echoes
     # X-Aide-User. `internal` keeps it off the public surface (auth_request only).
-#    location = /aide/api/auth/check {
-#        internal;
-#        proxy_pass http://aide_chat_shell/api/auth/check;
-#        proxy_set_header Cookie $http_cookie;
-#        proxy_set_header Host $host;
-#        proxy_pass_request_body off;
-#        proxy_set_header Content-Length "";
-#    }
-#    # SPA + /api/* glue. Trailing slash on proxy_pass strips /aide/ so the Node
-#    # server (static at root) resolves /aide/assets/* correctly.
-#    location /aide/ {
-#        proxy_pass http://aide_chat_shell/;
-#        proxy_set_header Host $host;
-#        proxy_set_header X-Real-IP $remote_addr;
-#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#        proxy_set_header X-Forwarded-Proto $scheme;
-#    }
-#    # leap-aide admin console (L1 operator UI). Mirrors /aide/: trailing slash
-#    # strips /aide-admin/ so the Node server (static at root) resolves
-#    # /aide-admin/assets/* correctly. No auth_request — the admin console has no
-#    # gateway WS to gate; the client-side cookie probe handles the SSO redirect.
-#    # Data is mock in dev. Remove this block + reload to retire it.
-#    location /aide-admin/ {
-#        proxy_pass http://aide_admin/;
-#        proxy_set_header Host $host;
-#        proxy_set_header X-Real-IP $remote_addr;
-#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#        proxy_set_header X-Forwarded-Proto $scheme;
-#    }
-#    # leap-aide worktree dev frontend (Vite :5181, base=/aide-wt/). Parallel path
-#    # so a worktree UI can be verified in the browser without disturbing the main
-#    # checkout's /aide/. NO trailing slash on proxy_pass: keep the /aide-wt/ prefix
-#    # (matches Vite base). Upgrade headers carry Vite's HMR websocket. The SPA
-#    # reuses the SAME backend as /aide/: gateway WS via /leap-aide/u/admin/ below,
-#    # auth via /aide/api/auth/check. Remove this block + reload to retire it.
-#    location /aide-wt/ {
-#        proxy_pass http://aide_wt;
-#        proxy_set_header Host $host;
-#        proxy_set_header X-Real-IP $remote_addr;
-#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#        proxy_set_header X-Forwarded-Proto $scheme;
-#        proxy_http_version 1.1;
-#        proxy_set_header Upgrade $http_upgrade;
-#        proxy_set_header Connection "upgrade";
-#    }
-#    # Second worktree slot (Vite :5182, base=/aide-wt2/). Same contract as
-#    # /aide-wt/ above — reuses /aide/'s auth check + the shared gateway WS — but a
-#    # separate port so two worktrees verify in parallel. Remove + reload to retire.
-#    location /aide-wt2/ {
-#        proxy_pass http://aide_wt2;
-#        proxy_set_header Host $host;
-#        proxy_set_header X-Real-IP $remote_addr;
-#        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-#        proxy_set_header X-Forwarded-Proto $scheme;
-#        proxy_http_version 1.1;
-#        proxy_set_header Upgrade $http_upgrade;
-#        proxy_set_header Connection "upgrade";
-#    }
-#    # Per-user OpenClaw gateway (WebSocket). auth_request → X-Aide-User →
-#    # x-forwarded-user for OpenClaw trusted-proxy auth. Strip the user prefix.
-#    location /leap-aide/u/admin/ {
-#        auth_request /aide/api/auth/check;
-#        auth_request_set $aide_user $upstream_http_x_aide_user;
-#        proxy_set_header x-forwarded-user  $aide_user;
-#        proxy_set_header x-forwarded-proto $scheme;
-#        proxy_set_header x-forwarded-host  $host;
-#        proxy_set_header x-forwarded-for   $proxy_add_x_forwarded_for;
-#        proxy_http_version 1.1;
-#        proxy_set_header Upgrade    $http_upgrade;
-#        proxy_set_header Connection "upgrade";
-#        rewrite ^/leap-aide/u/admin/(.*)$ /$1 break;
-#        proxy_pass http://openclaw_admin;
-#    }
-#    # The Control UI auto-detects its WebSocket URL WITHOUT a trailing slash
-#    # (wss://…/leap-aide/u/admin), which the prefix location above (…/admin/)
-#    # never matches. This exact-match block proxies that bare path to the gateway
-#    # root so the dashboard connects automatically — no manual slash fix-up.
-#    location = /leap-aide/u/admin {
-#        auth_request /aide/api/auth/check;
-#        auth_request_set $aide_user $upstream_http_x_aide_user;
-#        proxy_set_header x-forwarded-user  $aide_user;
-#        proxy_set_header x-forwarded-proto $scheme;
-#        proxy_set_header x-forwarded-host  $host;
-#        proxy_set_header x-forwarded-for   $proxy_add_x_forwarded_for;
-#        proxy_http_version 1.1;
-#        proxy_set_header Upgrade    $http_upgrade;
-#        proxy_set_header Connection "upgrade";
-#        proxy_pass http://openclaw_admin/;
-#    }
+    location = /aide/api/auth/check {
+        internal;
+        proxy_pass http://aide_chat_shell/api/auth/check;
+        proxy_set_header Cookie $http_cookie;
+        proxy_set_header Host $host;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+    }
+    # SPA + /api/* glue. Trailing slash on proxy_pass strips /aide/ so the Node
+    # server (static at root) resolves /aide/assets/* correctly.
+    location /aide/ {
+        proxy_pass http://aide_chat_shell/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    # leap-aide admin console (L1 operator UI). Mirrors /aide/: trailing slash
+    # strips /aide-admin/ so the Node server (static at root) resolves
+    # /aide-admin/assets/* correctly. No auth_request — the admin console has no
+    # gateway WS to gate; the client-side cookie probe handles the SSO redirect.
+    # Data is mock in dev. Remove this block + reload to retire it.
+    location /aide-admin/ {
+        proxy_pass http://aide_admin/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+    # leap-aide worktree dev frontend (Vite :5181, base=/aide-wt/). Parallel path
+    # so a worktree UI can be verified in the browser without disturbing the main
+    # checkout's /aide/. NO trailing slash on proxy_pass: keep the /aide-wt/ prefix
+    # (matches Vite base). Upgrade headers carry Vite's HMR websocket. The SPA
+    # reuses the SAME backend as /aide/: gateway WS via /leap-aide/u/admin/ below,
+    # auth via /aide/api/auth/check. Remove this block + reload to retire it.
+    location /aide-wt/ {
+        proxy_pass http://aide_wt;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    # Second worktree slot (Vite :5182, base=/aide-wt2/). Same contract as
+    # /aide-wt/ above — reuses /aide/'s auth check + the shared gateway WS — but a
+    # separate port so two worktrees verify in parallel. Remove + reload to retire.
+    location /aide-wt2/ {
+        proxy_pass http://aide_wt2;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+    }
+    # Per-user OpenClaw gateway (WebSocket). auth_request → X-Aide-User →
+    # x-forwarded-user for OpenClaw trusted-proxy auth. Strip the user prefix.
+    location /leap-aide/u/admin/ {
+        auth_request /aide/api/auth/check;
+        auth_request_set $aide_user $upstream_http_x_aide_user;
+        proxy_set_header x-forwarded-user  $aide_user;
+        proxy_set_header x-forwarded-proto $scheme;
+        proxy_set_header x-forwarded-host  $host;
+        proxy_set_header x-forwarded-for   $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        rewrite ^/leap-aide/u/admin/(.*)$ /$1 break;
+        proxy_pass http://openclaw_admin;
+    }
+    # The Control UI auto-detects its WebSocket URL WITHOUT a trailing slash
+    # (wss://…/leap-aide/u/admin), which the prefix location above (…/admin/)
+    # never matches. This exact-match block proxies that bare path to the gateway
+    # root so the dashboard connects automatically — no manual slash fix-up.
+    location = /leap-aide/u/admin {
+        auth_request /aide/api/auth/check;
+        auth_request_set $aide_user $upstream_http_x_aide_user;
+        proxy_set_header x-forwarded-user  $aide_user;
+        proxy_set_header x-forwarded-proto $scheme;
+        proxy_set_header x-forwarded-host  $host;
+        proxy_set_header x-forwarded-for   $proxy_add_x_forwarded_for;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade    $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_pass http://openclaw_admin/;
+    }
 
     error_page   500 502 503 504  /50x.html;
     location = /50x.html {

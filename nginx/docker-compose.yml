@@ -16,6 +16,11 @@ services:
     # command: sh -c "echo MY_VAR is $BINARY_DOWNLOAD_VERSION"
     networks:
       - dev_db_network
+      # leap-aide rendered deployment 的 ingress 网络。属主是 leap-aide 的
+      # compose(它创建并持有),本栈只以 external 加入,永不删除它。
+      # 启动顺序:leap-aide 栈先 up,本栈后 join(先启会 fail loud,属预期)。
+      # 契约:leap-aide docs/architecture/web-tier-deployment.md §3。
+      - leap-aide-edge
       # - dev_sso_network
     volumes:
       - ./conf.d:/etc/nginx/conf.d/
@@ -27,6 +32,9 @@ networks:
   dev_db_network:
     driver: bridge
     external: true
+  leap-aide-edge:
+    external: true
+    name: leap-aide-edge
   # dev_sso_network:
   #   driver: bridge
   #   external: true
