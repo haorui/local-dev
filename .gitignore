@@ -39,10 +39,6 @@ kerberos/data/
 **/selfsigned.crt
 **/selfsigned.*.bak-*
 
-# License test artifacts
-dbmanager/license/tar*/
-dbmanager/license/encrypted.*
-
 # Compiled JARs (driver / plugin binaries — fetched/built, not source)
 *.jar
 

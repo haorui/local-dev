@@ -4,7 +4,9 @@ services:
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     restart: always
     networks:
-      - dev_db_network
+      dev_db_network:
+        aliases:
+          - smartdata-redis
     ports:
       - "6379:6379"
     volumes:

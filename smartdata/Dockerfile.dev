@@ -1,0 +1,15 @@
+FROM maven:3.9.9-eclipse-temurin-11
+
+WORKDIR /workspace
+
+# Used only by the container healthcheck; the application itself stays on the
+# JDK/Maven toolchain supplied by the base image.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Keep the dependency cache outside the source bind mount. The directory is made
+# writable because Compose may run this development image as a caller-selected UID.
+ENV MAVEN_CONFIG=/maven-cache
+RUN mkdir -p /maven-cache \
+    && chmod 0777 /maven-cache

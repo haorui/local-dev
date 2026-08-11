@@ -1,0 +1,11 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /workspace
+
+RUN npm config set registry https://registry.npmmirror.com \
+    && npm install --global --registry=https://registry.npmmirror.com pnpm@9.1.2 \
+    && mkdir -p /pnpm-store \
+    && chmod 0777 /pnpm-store
+
+ENV PNPM_HOME=/pnpm-store
+ENV npm_config_store_dir=/pnpm-store

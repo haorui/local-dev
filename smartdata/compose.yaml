@@ -1,0 +1,305 @@
+services:
+  trusted-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /workspace
+    user: "${SMARTDATA_DEV_UID:-1000}:${SMARTDATA_DEV_GID:-1000}"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      REDIS_HOST: ${LOCAL_DEV_REDIS_HOST:?set LOCAL_DEV_REDIS_HOST in .env}
+      REDIS_PORT: ${LOCAL_DEV_REDIS_PORT:?set LOCAL_DEV_REDIS_PORT in .env}
+      REDIS_PASSWORD: ${LOCAL_DEV_REDIS_PASSWORD:-}
+      TRUSTED_PROXY_RELEASE_ENDPOINT: ${LOCAL_DEV_TRUSTED_PROXY_RELEASE_ENDPOINT:?set LOCAL_DEV_TRUSTED_PROXY_RELEASE_ENDPOINT in .env}
+      TRUSTED_PROXY_RELEASE_CLIENT_CERT_PATH: /run/smartdata/trusted-proxy/proxy-client.pem
+      TRUSTED_PROXY_RELEASE_CLIENT_KEY_PATH: /run/smartdata/trusted-proxy/proxy-client-key.pem
+      TRUSTED_PROXY_RELEASE_TRUST_ANCHOR_PATH: /run/smartdata/trusted-proxy/control-plane-ca.pem
+      TRUSTED_PROXY_TLS_BUNDLE_PATH: /run/smartdata/trusted-proxy/bundle.pem
+      TRUSTED_PROXY_TLS_KEY_PATH: /run/smartdata/trusted-proxy/bundle-key.pem
+      TRUSTED_PROXY_LISTEN_PORT: 8443
+      TRUSTED_PROXY_MGMT_PORT: 8087
+      TRUSTED_PROXY_BIND_ADDRESS: 0.0.0.0
+      TRUSTED_PROXY_FORWARD_PROXY_ENABLED: ${TRUSTED_PROXY_FORWARD_PROXY_ENABLED:-false}
+      TRUSTED_PROXY_FORWARD_PROXY_PORT: 3128
+      TRUSTED_PROXY_FORWARD_PROXY_BIND_ADDRESS: 0.0.0.0
+      LOG_PATH: /data/smartdb/logs
+    ports:
+      - "127.0.0.1:${TP_HOST_LISTEN_PORT:-8443}:8443"
+      - "127.0.0.1:${TP_HOST_MGMT_PORT:-8087}:8087"
+      - "127.0.0.1:${TP_HOST_FORWARD_PROXY_PORT:-3128}:3128"
+    volumes:
+      - type: bind
+        source: ${SMARTDATA_SOURCE_DIR:?set SMARTDATA_SOURCE_DIR in .env}
+        target: /workspace
+      - type: volume
+        source: maven-cache
+        target: /maven-cache
+      - type: bind
+        source: ${TRUSTED_PROXY_DEV_TLS_DIR:?set TRUSTED_PROXY_DEV_TLS_DIR in .env}/proxy-client.pem
+        target: /run/smartdata/trusted-proxy/proxy-client.pem
+        read_only: true
+      - type: bind
+        source: ${TRUSTED_PROXY_DEV_TLS_DIR:?set TRUSTED_PROXY_DEV_TLS_DIR in .env}/proxy-client-key.pem
+        target: /run/smartdata/trusted-proxy/proxy-client-key.pem
+        read_only: true
+      - type: bind
+        source: ${TRUSTED_PROXY_DEV_TLS_DIR:?set TRUSTED_PROXY_DEV_TLS_DIR in .env}/control-plane-ca.pem
+        target: /run/smartdata/trusted-proxy/control-plane-ca.pem
+        read_only: true
+      - type: bind
+        source: ${TRUSTED_PROXY_DEV_TLS_DIR:?set TRUSTED_PROXY_DEV_TLS_DIR in .env}/bundle.pem
+        target: /run/smartdata/trusted-proxy/bundle.pem
+        read_only: true
+      - type: bind
+        source: ${TRUSTED_PROXY_DEV_TLS_DIR:?set TRUSTED_PROXY_DEV_TLS_DIR in .env}/bundle-key.pem
+        target: /run/smartdata/trusted-proxy/bundle-key.pem
+        read_only: true
+      - type: bind
+        source: ./.data/logs
+        target: /data/smartdb/logs
+    tmpfs:
+      - /tmp:mode=1777
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ -n "$${DB_ENCRYPT_KEY:-}" ]; then
+          echo 'DB_ENCRYPT_KEY must not be supplied to smartdata-trusted-proxy' >&2
+          exit 1
+        fi
+        mvn -Dmaven.repo.local=/maven-cache/repository package -pl deployable/smartdata-trusted-proxy -am -DskipTests
+        exec java -jar deployable/smartdata-trusted-proxy/target/smartdata-trusted-proxy-exec.jar
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8087/actuator/health/liveness >/dev/null"]
+      interval: 15s
+      timeout: 3s
+      start_period: 30s
+      retries: 3
+
+  dbgate-web:
+    image: nginx:1.27-alpine
+    ports:
+      - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${DBGATE_WEB_HOST_PORT:-5300}:80"
+    volumes:
+      - type: bind
+        source: ${DBGATE_SOURCE_DIR:?set DBGATE_SOURCE_DIR in .env}/packages/web/public
+        target: /usr/share/nginx/html
+        read_only: true
+    networks:
+      - dev_db_network
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - --spider
+        - --quiet
+        - http://127.0.0.1/
+      interval: 15s
+      timeout: 5s
+      start_period: 5s
+      retries: 3
+
+  dbgate-api:
+    build:
+      context: .
+      dockerfile: Dockerfile.node-yarn.dev
+    working_dir: /workspace
+    env_file:
+      - ${DBGATE_API_ENV_FILE:?set DBGATE_API_ENV_FILE in .env}
+    environment:
+      PORT: 3000
+      ONLINE_ADMIN_API: ${DBGATE_API_ADMIN_URL:-http://smartdata-admin:8084}
+      JAVA_GATEWAY_ENABLED: ${DBGATE_JAVA_GATEWAY_ENABLED:-true}
+      JAVA_GATEWAY_HOST: ${DBGATE_JAVA_GATEWAY_HOST:-smartdata-admin}
+      JAVA_GATEWAY_PORT: ${DBGATE_JAVA_GATEWAY_PORT:-8084}
+      JAVA_GATEWAY_PROTOCOL: ${DBGATE_JAVA_GATEWAY_PROTOCOL:-http}
+      DB_HOST: pgvector
+      DB_PORT: 5432
+      DB_DATABASE: ${DBGATE_DB_DATABASE:-smartdata_dev}
+      REDIS_HOST: smartdata-redis
+      REDIS_PORT: 6379
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${DBGATE_API_HOST_PORT:-3000}:3000"
+    volumes:
+      - type: bind
+        source: ${DBGATE_SOURCE_DIR:?set DBGATE_SOURCE_DIR in .env}
+        target: /workspace
+      - type: volume
+        source: dbgate-yarn-node-modules
+        target: /workspace/node_modules
+      - type: volume
+        source: dbgate-yarn-cache
+        target: /yarn-cache
+    networks:
+      - dev_db_network
+    tmpfs:
+      - /tmp:mode=1777
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ ! -f /workspace/node_modules/.yarn-integrity ]; then
+          node adjustPackageJson
+          yarn install --frozen-lockfile --ignore-scripts
+          node resetPackagedPlugins
+          node fillNativeModules
+        fi
+        exec node --watch packages/api/src/index.js --listen-api
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "const net=require('net'); const s=net.createConnection(3000,'127.0.0.1',()=>{s.end();process.exit(0)}); s.on('error',()=>process.exit(1)); setTimeout(()=>process.exit(1),2000)"
+      interval: 15s
+      timeout: 5s
+      start_period: 25s
+      retries: 3
+
+  dbmanager:
+    build:
+      context: .
+      dockerfile: Dockerfile.node-pnpm.dev
+    working_dir: /workspace
+    environment:
+      VITE_PORT: 3013
+      VITE_API_URL_PREFIX: ${DBMANAGER_API_URL_PREFIX:-/dbapi}
+      VITE_DEV_API_URL: ${DBMANAGER_DEV_API_URL:-http://smartdata-admin:8084}
+      VITE_SERVER_USE_POLLING: ${DBMANAGER_USE_POLLING:-false}
+      VITE_SERVER_WATCH_INTERVAL: ${DBMANAGER_WATCH_INTERVAL:-1000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${DBMANAGER_HOST_PORT:-3013}:3013"
+    volumes:
+      - type: bind
+        source: ${DBMANAGER_SOURCE_DIR:?set DBMANAGER_SOURCE_DIR in .env}
+        target: /workspace
+      - type: volume
+        source: dbmanager-pnpm-node-modules
+        target: /workspace/node_modules
+      - type: volume
+        source: dbmanager-pnpm-store
+        target: /pnpm-store
+    networks:
+      - dev_db_network
+    tmpfs:
+      - /tmp:mode=1777
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ ! -f /workspace/node_modules/.modules.yaml ]; then
+          pnpm install --frozen-lockfile
+        fi
+        exec pnpm dev
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:3013/', r => process.exit(r.statusCode < 500 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  smartdata-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /workspace
+    user: "${SMARTDATA_DEV_UID:-1000}:${SMARTDATA_DEV_GID:-1000}"
+    env_file:
+      - ${SMARTDATA_ENV_FILE:?set SMARTDATA_ENV_FILE in .env}
+    environment:
+      PORT: 8084
+      JAVA_HOME: /opt/java/openjdk
+      PATH: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      MAVEN_OPTS: ${SMARTDATA_MAVEN_OPTS:--Xmx768m -XX:MaxMetaspaceSize=384m}
+      JAVA_TOOL_OPTIONS: ${SMARTDATA_JAVA_TOOL_OPTIONS:--Xms256m -Xmx1024m}
+      SMARTDATA_SKIP_BUILD: ${SMARTDATA_SKIP_BUILD:-false}
+      DB_HOST: pgvector
+      DB_PORT: 5432
+      DB_NAME: ${SMARTDATA_DB_NAME:-smartdata_dev}
+      REDIS_HOST: smartdata-redis
+      REDIS_PORT: 6379
+      AUTH_RSA_KEY_DIR: /run/smartdata/auth-rsa
+      ONTOLOGY_REPO_PATH: /run/smartdata/ontology
+      LOG_PATH: /data/smartdata/logs
+      SMARTDATA_TRUSTED_PROXY_RELEASE_SERVER_PORT: 8444
+      SMARTDATA_TRUSTED_PROXY_RELEASE_SERVER_CERT_PATH: /run/smartdata/trusted-proxy/admin-release.pem
+      SMARTDATA_TRUSTED_PROXY_RELEASE_SERVER_KEY_PATH: /run/smartdata/trusted-proxy/admin-release-key.pem
+      SMARTDATA_TRUSTED_PROXY_RELEASE_SERVER_CLIENT_CA_PATH: /run/smartdata/trusted-proxy/control-plane-ca.pem
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${SMARTDATA_ADMIN_HOST_PORT:-8084}:8084"
+      - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${SMARTDATA_RELEASE_HOST_PORT:-8444}:8444"
+    volumes:
+      - type: bind
+        source: ${SMARTDATA_SOURCE_DIR:?set SMARTDATA_SOURCE_DIR in .env}
+        target: /workspace
+      - type: volume
+        source: maven-cache
+        target: /maven-cache
+      - type: bind
+        source: ${SMARTDATA_AUTH_RSA_DIR:?set SMARTDATA_AUTH_RSA_DIR in .env}
+        target: /run/smartdata/auth-rsa
+        read_only: true
+      - type: bind
+        source: ${SMARTDATA_ONTOLOGY_DIR:?set SMARTDATA_ONTOLOGY_DIR in .env}
+        target: /run/smartdata/ontology
+      - type: bind
+        source: ${SMARTDATA_ADMIN_TLS_DIR:?set SMARTDATA_ADMIN_TLS_DIR in .env}/admin-release.pem
+        target: /run/smartdata/trusted-proxy/admin-release.pem
+        read_only: true
+      - type: bind
+        source: ${SMARTDATA_ADMIN_TLS_DIR:?set SMARTDATA_ADMIN_TLS_DIR in .env}/admin-release-key.pem
+        target: /run/smartdata/trusted-proxy/admin-release-key.pem
+        read_only: true
+      - type: bind
+        source: ${SMARTDATA_ADMIN_TLS_DIR:?set SMARTDATA_ADMIN_TLS_DIR in .env}/control-plane-ca.pem
+        target: /run/smartdata/trusted-proxy/control-plane-ca.pem
+        read_only: true
+      - type: bind
+        source: ${SMARTDATA_LOG_DIR:?set SMARTDATA_LOG_DIR in .env}
+        target: /data/smartdata/logs
+    networks:
+      - dev_db_network
+    tmpfs:
+      - /tmp:mode=1777
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ "$${SMARTDATA_SKIP_BUILD:-false}" != "true" ] || [ ! -f deployable/smartdata-admin/target/smartdata-admin.jar ]; then
+          mvn -Dmaven.repo.local=/maven-cache/repository package -pl deployable/smartdata-admin -am -DskipTests
+        fi
+        exec java --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/java.util=ALL-UNNAMED --add-opens java.base/sun.nio.ch=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED -jar deployable/smartdata-admin/target/smartdata-admin.jar --spring.profiles.active=dev
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8084/actuator/health/liveness >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+
+volumes:
+  maven-cache:
+  dbgate-yarn-node-modules:
+  dbgate-yarn-cache:
+  dbmanager-pnpm-node-modules:
+  dbmanager-pnpm-store:
+
+networks:
+  dev_db_network:
+    name: ${DEV_DB_NETWORK:-dev_db_network}
+    external: true

@@ -1,0 +1,11 @@
+FROM node:20-bookworm-slim
+
+WORKDIR /workspace
+
+RUN corepack disable \
+    && npm config set registry https://registry.npmmirror.com \
+    && npm install --global --registry=https://registry.npmmirror.com yarn@1.22.22 \
+    && mkdir -p /yarn-cache \
+    && chmod 0777 /yarn-cache
+
+ENV YARN_CACHE_FOLDER=/yarn-cache
