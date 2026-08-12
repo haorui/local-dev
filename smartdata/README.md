@@ -65,6 +65,9 @@ MCP 源码通过 `SMARTDATA_MCP_SOURCE_DIR` 挂载到 Node 22 容器内，运行
 `pnpm dev` / `tsx watch`。容器内通过 Compose DNS 访问 `smartdata-admin:8084`，发布 MCP
 宿主机端口 `3010`；探针端口 `9099` 仅在容器内部提供给 Compose healthcheck。
 
+如果其他容器通过 Compose DNS 调用 MCP，必须保留 `smartdata-mcp:3010` 在
+`SMARTDATA_MCP_ALLOWED_HOSTS` 中；该值已包含在 `.env.example` 和 compose 默认值中。
+
 ```bash
 make smartdata-mcp-up
 make smartdata-mcp-logs
