@@ -105,6 +105,59 @@ services:
       start_period: 5s
       retries: 3
 
+  smartdata-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile.node-pnpm22.dev
+    working_dir: /workspace
+    environment:
+      # The development command runs with file watching, while production
+      # selects 0.0.0.0 so the container port is reachable from the host.
+      NODE_ENV: production
+      MCP_TRANSPORT: http
+      MCP_PORT: 3010
+      MCP_PROBE_PORT: 9099
+      MCP_ALLOWED_HOSTS: ${SMARTDATA_MCP_ALLOWED_HOSTS:-localhost:3010,127.0.0.1:3010,dev.smartdata.local}
+      SMARTDATA_ADMIN_URL: ${SMARTDATA_MCP_ADMIN_URL:-http://smartdata-admin:8084}
+      MCP_UPSTREAM_BASE_PATH: ${SMARTDATA_MCP_UPSTREAM_BASE_PATH:-/agent-api/v1}
+      MCP_UPSTREAM_TIMEOUT_MS: ${SMARTDATA_MCP_UPSTREAM_TIMEOUT_MS:-30000}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${SMARTDATA_MCP_HOST_PORT:-3010}:3010"
+    volumes:
+      - type: bind
+        source: ${SMARTDATA_MCP_SOURCE_DIR:-../../smartdata-mcp}
+        target: /workspace
+      - type: volume
+        source: smartdata-mcp-pnpm-node-modules
+        target: /workspace/node_modules
+      - type: volume
+        source: smartdata-mcp-pnpm-store
+        target: /pnpm-store
+    networks:
+      - dev_db_network
+    tmpfs:
+      - /tmp:mode=1777
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ ! -x /workspace/node_modules/.bin/tsx ]; then
+          pnpm install --frozen-lockfile --prod=false
+        fi
+        exec pnpm dev
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "require('http').get('http://127.0.0.1:9099/healthz', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
   dbgate-api:
     build:
       context: .
@@ -298,6 +351,8 @@ volumes:
   dbgate-yarn-cache:
   dbmanager-pnpm-node-modules:
   dbmanager-pnpm-store:
+  smartdata-mcp-pnpm-node-modules:
+  smartdata-mcp-pnpm-store:
 
 networks:
   dev_db_network:

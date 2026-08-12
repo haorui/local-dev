@@ -15,7 +15,7 @@ Personal local development sandbox — docker compose recipes for the services S
 | `dns/` | adguard 本地 DNS（按需用） |
 | `kerberos/` | KDC，给 hive2/hive3 鉴权测试用 |
 | `vault/` | HashiCorp Vault 开发模式 |
-| `smartdata/` | SmartData 产品容器化开发配置（四服务 + 独立 Trusted Proxy） |
+| `smartdata/` | SmartData 产品容器化开发配置（四服务 + 独立 MCP / Trusted Proxy） |
 | `archive/` | 已弃用栈的归档：`sso/`（老 UCC SSO）/ `smartfs/` / `mqtt/` / `minio/` / `traefik/` / `docs/`（redis 旧文档） |
 
 ## 服务拓扑 (dev.smartdata.local)
@@ -33,7 +33,7 @@ SmartData 有两套互不替代的开发方式：`../smartdata/make dev` 启动 
 | 通知 SSE | `/dbapi/system/notifications/stream` | 8084 | 同 smartdata |
 | dbgate 编辑器前端 | `/dbgatex/` | 5300 | host: `../smartdata/make dev`；container: `make smartdata-up` |
 | dbgate 编辑器 API | `/dbgatex/api/`（终端 `/dbgatex/api/terminal`） | 3000 | host: `../smartdata/make dev`；container: `make smartdata-up` |
-| smartdata MCP | `/mcp-smartdata/mcp` | 3010 | 可选 `make dev-smartdata-mcp` |
+| smartdata MCP | `/mcp-smartdata/mcp` | 3010 | host: `../smartdata/make dev-smartdata-mcp`；container: `make smartdata-mcp-up` |
 
 **权威源**（本表的值从这里派生）：
 
@@ -72,6 +72,22 @@ make smartdata-up
 make smartdata-ps
 make smartdata-down
 ```
+
+### 起 SmartData MCP 容器
+
+MCP 是独立 opt-in sidecar，不会被 `make smartdata-up` 隐式启动。它挂载
+`../smartdata-mcp` 源码，在 Node 22 容器内运行 `pnpm dev`；上游默认通过
+Compose DNS 访问 `smartdata-admin:8084`。
+
+```sh
+make smartdata-mcp-up
+make smartdata-mcp-logs
+make smartdata-mcp-down
+```
+
+容器模式下 MCP 发布到宿主机 `3010`，探针 `9099` 只在容器网络内提供，所以 nginx 的
+`/mcp-smartdata/mcp` 路由无需改动。修改 MCP 源码后容器会沿用 `tsx watch`
+自动重载；首次启动会在 named volume 中执行一次 `pnpm install`。
 
 Trusted Proxy 不会被 `make smartdata-up` 隐式启动，使用独立目标：
 
@@ -117,8 +133,9 @@ docker compose -f ai/langflow/docker-compose.yml up -d
 
 `makefile` wire 了三组高频栈：`nginx`（nup/ndown）、`redis` 三种拓扑
 （redis-up/redis-sentinel-up/redis-cluster-up + 对应 down），以及 SmartData
-容器模式（smartdata-up/down/restart/logs/config/ps）。`SERVICE=<name>` 可用于
-单服务启动、停止和查看日志；Trusted Proxy 有独立目标。
+容器模式（smartdata-up/down/restart/logs/config/ps）。MCP sidecar 有独立的
+`smartdata-mcp-up/down/restart/logs` 目标；`SERVICE=<name>` 仍可用于四个核心
+服务的单服务启动、停止和查看日志。Trusted Proxy 也有独立目标。
 
 ## 约定
 
@@ -136,6 +153,7 @@ docker compose -f ai/langflow/docker-compose.yml up -d
 | `../smartdata` | 主后端；host 模式由 `make dev` 起四服务，container 模式由本仓 `make smartdata-up` 起 |
 | `../dbmanager` | Vue 前端，跑在 3013 |
 | `../dbgate` | 数据库编辑器 BFF |
+| `../smartdata-mcp` | SmartData MCP sidecar；host 模式由 `../smartdata/make dev-smartdata-mcp` 起，container 模式由本仓 `make smartdata-mcp-up` 起 |
 | `../ops-workspace` | 生产/线上运维仓（Jenkins/Harbor/Gitea/FRP 配置快照），和本仓互补 |
 
 ## 历史

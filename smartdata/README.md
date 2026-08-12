@@ -1,17 +1,18 @@
 # SmartData 本地容器化开发配置
 
-本目录是 SmartData 产品开发环境的容器化配置入口，承载四个独立开发服务：
+本目录是 SmartData 产品开发环境的容器化配置入口，承载四个核心开发服务：
 SmartData admin、dbmanager、dbgate-api、dbgate-web，以及独立 opt-in 的
-`smartdata-trusted-proxy`。
+`smartdata-mcp` 和 `smartdata-trusted-proxy`。
 
 ## 边界
 
 - `../smartdata/make dev` 继续是 host + tmux 开发方式；容器化方式只由
   `local-dev/makefile` 提供，两者互不替代。
-- SmartData admin、dbmanager、dbgate-api 通过 bind mount 使用
-  `../smartdata`、`../dbmanager`、`../dbgate` 源码；dbgate-web 只读挂载
+- SmartData admin、dbmanager、dbgate-api、smartdata-mcp 通过 bind mount 使用
+  `../smartdata`、`../dbmanager`、`../dbgate`、`../smartdata-mcp` 源码；dbgate-web 只读挂载
   `../dbgate/packages/web/public` 的宿主机打包产物，不在容器内安装依赖或编译。
-- 容器内的 Maven、pnpm、Yarn 依赖缓存保存在 Docker named volume。
+- 容器内的 Maven、pnpm、Yarn 依赖缓存保存在 Docker named volume；MCP 使用 Node 22
+  和 pnpm 9.15.0。
 - SmartData admin 和 dbgate-api 直接加入现有 `dev_db_network`，通过
   `pgvector:5432` 和 `smartdata-redis:6379` 访问 PostgreSQL/Redis 容器。
 - Trusted Proxy 仍是独立 opt-in 容器；它当前通过 `host.docker.internal` 访问
@@ -55,8 +56,24 @@ make smartdata-logs
 make smartdata-down
 ```
 
-`make smartdata-up` 默认只启动四个服务，不会启动 Trusted Proxy。nginx 仍通过
+`make smartdata-up` 默认只启动四个核心服务，不会启动 MCP 或 Trusted Proxy。nginx 仍通过
 现有 host-gateway upstream 和四个 canonical host port 访问容器服务。
+
+## SmartData MCP（独立 opt-in）
+
+MCP 源码通过 `SMARTDATA_MCP_SOURCE_DIR` 挂载到 Node 22 容器内，运行与 host 模式相同的
+`pnpm dev` / `tsx watch`。容器内通过 Compose DNS 访问 `smartdata-admin:8084`，发布 MCP
+宿主机端口 `3010`；探针端口 `9099` 仅在容器内部提供给 Compose healthcheck。
+
+```bash
+make smartdata-mcp-up
+make smartdata-mcp-logs
+make smartdata-mcp-down
+```
+
+如果使用 MCP worktree，设置 `SMARTDATA_MCP_SOURCE_DIR`；标准目录默认是
+`../../smartdata-mcp`。MCP 的 host 启动方式仍保留在 `../smartdata/make dev-smartdata-mcp`，
+与本容器模式互不替代。
 
 `dbgate-api` 的 Java Gateway 默认指向 Compose 内的 `smartdata-admin:8084`；
 如果只启动部分服务做混合迁移验证，在 `.env` 中将

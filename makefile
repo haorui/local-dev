@@ -39,11 +39,30 @@ SMARTDATA_SERVICES := smartdata-admin dbmanager dbgate-api dbgate-web
 SMARTDATA_SERVICE_ARGS = $(if $(SERVICE),$(SERVICE),$(SMARTDATA_SERVICES))
 SMARTDATA_COMPOSE = DEV_DB_NETWORK=$(SMARTDATA_NETWORK) docker compose --env-file ./smartdata/.env -f ./smartdata/compose.yaml
 
-.PHONY: smartdata-up
+.PHONY: smartdata-up smartdata-mcp-up smartdata-mcp-down smartdata-mcp-restart smartdata-mcp-logs
 smartdata-up:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
 	@docker network inspect "$(SMARTDATA_NETWORK)" >/dev/null 2>&1 || (echo "Docker network '$(SMARTDATA_NETWORK)' is missing; start the selected db/Redis stack first" >&2; exit 1)
 	@$(SMARTDATA_COMPOSE) up --build -d $(SMARTDATA_SERVICE_ARGS)
+
+# smartdata-mcp is an independent opt-in sidecar, matching the host-mode
+# dev-smartdata-mcp target without pulling it into the four-service core stack.
+smartdata-mcp-up:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@docker network inspect "$(SMARTDATA_NETWORK)" >/dev/null 2>&1 || (echo "Docker network '$(SMARTDATA_NETWORK)' is missing; start the selected db/Redis stack first" >&2; exit 1)
+	@$(SMARTDATA_COMPOSE) up --build -d smartdata-mcp
+
+smartdata-mcp-down:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@$(SMARTDATA_COMPOSE) stop smartdata-mcp
+
+smartdata-mcp-restart:
+	@$(MAKE) smartdata-mcp-down
+	@$(MAKE) smartdata-mcp-up
+
+smartdata-mcp-logs:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@$(SMARTDATA_COMPOSE) logs -f smartdata-mcp
 
 .PHONY: smartdata-down
 smartdata-down:
