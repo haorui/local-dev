@@ -46,3 +46,4 @@ kerberos/data/
 vault/vault/config/local.json
 vault/vault/config/vault.hcl
 vault/vault/config/vault.mysql.hcl
+.worktrees
