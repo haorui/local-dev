@@ -312,6 +312,9 @@ services:
         source: ${SMARTDATA_ONTOLOGY_DIR:?set SMARTDATA_ONTOLOGY_DIR in .env}
         target: /run/smartdata/ontology
       - type: bind
+        source: ${SMARTDATA_DRIVERS_DIR:?set SMARTDATA_DRIVERS_DIR in .env}
+        target: /home/ubuntu/.smartdata/drivers
+      - type: bind
         source: ${SMARTDATA_ADMIN_TLS_DIR:?set SMARTDATA_ADMIN_TLS_DIR in .env}/admin-release.pem
         target: /run/smartdata/trusted-proxy/admin-release.pem
         read_only: true
