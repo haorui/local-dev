@@ -74,6 +74,15 @@ smartdata-restart:
 	@$(MAKE) smartdata-down SERVICE='$(SERVICE)'
 	@$(MAKE) smartdata-up SERVICE='$(SERVICE)'
 
+# Build the admin fat jar on the host (much faster than the in-container mvn),
+# then restart only the admin container, which picks up target/smartdata-admin.jar
+# through the /workspace bind mount. Relies on SMARTDATA_SKIP_BUILD=true (default).
+.PHONY: smartdata-admin-rebuild
+smartdata-admin-rebuild:
+	@cd ./smartdata/$$(sed -n 's/^SMARTDATA_SOURCE_DIR=//p' ./smartdata/.env) && \
+	  mvn -q package -pl deployable/smartdata-admin -am -Dmaven.test.skip=true
+	@$(MAKE) smartdata-restart SERVICE=smartdata-admin
+
 .PHONY: smartdata-logs
 smartdata-logs:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
