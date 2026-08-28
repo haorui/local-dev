@@ -82,9 +82,10 @@ make smartdata-mcp-down
 如果只启动部分服务做混合迁移验证，在 `.env` 中将
 `DBGATE_JAVA_GATEWAY_HOST` 覆盖为 `host.docker.internal`。
 
-admin 容器默认限制 Maven/Java 堆以适配本地 Docker 内存；如果只是恢复已有构建产物，
-可用 `SMARTDATA_SKIP_BUILD=true make smartdata-up SERVICE=smartdata-admin` 跳过 Maven
-编译，直接启动 `target/smartdata-admin.jar`。
+admin 容器默认（`SMARTDATA_SKIP_BUILD=true`）不在容器内编译，直接启动 bind-mount 进来的
+`target/smartdata-admin.jar`。改完 Java 代码后在宿主机执行
+`make smartdata-admin-rebuild`（宿主机 `mvn package` + 仅重启 admin 容器）；
+jar 不存在时容器仍会自动回退到容器内 Maven 编译（受下方 Maven/Java 堆限制）。
 dbgate-web 容器只托管已生成的 `packages/web/public`；修改前端源码后，在宿主机
 重新执行 `yarn build:web` 即可，容器无需重新安装依赖。
 
