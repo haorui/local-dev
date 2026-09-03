@@ -94,6 +94,15 @@ curl -k -N -H "Host: dev.smartdata.local" \
 
 纯 openssl 自签也可用于 `curl -k`，但浏览器需手动点「继续访问」，不如 mkcert 省事。
 
+### 8446 — caller-credential registry vhost
+
+此端口只将 `/trusted-proxy/caller-credential/` 反代到 `smartdata-smartdata-admin-1:8445` 的共享密钥 connector，其他路径均返回 404。
+它用于让远程 provisioner 通过 HTTPS 访问本机 dev SmartData 的 8445 connector。
+provisioner 需配置 `egress.callerCredential.url: https://<mac-ip>:8446` 和
+`egress.callerCredential.allowInsecure: true`（远程主机未安装 mkcert CA）。
+不要配置基于 `allow` 的 IP 白名单：docker-proxy 会把来源地址改写为 bridge 地址，白名单会放行所有容器。
+不需要时请删除该 vhost，并取消发布 8446 端口。
+
 ### 不用 mkcert 时（仅 curl / 脚本）
 
 ```sh

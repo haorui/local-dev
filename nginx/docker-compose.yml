@@ -11,6 +11,7 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "8446:8446"
     # environment:
     #   - MY_VAR=${MY_VAR:-$(hostname)}
     # command: sh -c "echo MY_VAR is $BINARY_DOWNLOAD_VERSION"
