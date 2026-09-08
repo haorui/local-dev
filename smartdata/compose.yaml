@@ -292,6 +292,8 @@ services:
       SMARTDATA_TRUSTED_PROXY_RELEASE_SERVER_CERT_PATH: /run/smartdata/trusted-proxy/admin-release.pem
       SMARTDATA_TRUSTED_PROXY_RELEASE_SERVER_KEY_PATH: /run/smartdata/trusted-proxy/admin-release-key.pem
       SMARTDATA_TRUSTED_PROXY_RELEASE_SERVER_CLIENT_CA_PATH: /run/smartdata/trusted-proxy/control-plane-ca.pem
+      # smartdata#1903 dependency heartbeat; dbgate-api exposes GET /health
+      PLATFORM_HEARTBEAT_EDITOR_URL: ${PLATFORM_HEARTBEAT_EDITOR_URL:-http://dbgate-api:3000/health}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
