@@ -2,10 +2,12 @@ FROM maven:3.9.9-eclipse-temurin-11
 
 WORKDIR /workspace
 
-# Used only by the container healthcheck; the application itself stays on the
-# JDK/Maven toolchain supplied by the base image.
+# curl is used only by the container healthcheck; postgresql-client-16 provides
+# pg_dump/pg_restore for the platform backup feature (major must match the
+# pgvector pg16 image). The application itself stays on the JDK/Maven toolchain
+# supplied by the base image.
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl \
+    && apt-get install -y --no-install-recommends curl postgresql-client-16 \
     && rm -rf /var/lib/apt/lists/*
 
 # Keep the dependency cache outside the source bind mount. The directory is made
