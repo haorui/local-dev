@@ -43,6 +43,7 @@ SMARTDATA_COMPOSE = DEV_DB_NETWORK=$(SMARTDATA_NETWORK) docker compose --env-fil
 smartdata-up:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
 	@docker network inspect "$(SMARTDATA_NETWORK)" >/dev/null 2>&1 || (echo "Docker network '$(SMARTDATA_NETWORK)' is missing; start the selected db/Redis stack first" >&2; exit 1)
+	@./smartdata/scripts/prepare-admin-state.sh ./smartdata/.env
 	@$(SMARTDATA_COMPOSE) up --build -d $(SMARTDATA_SERVICE_ARGS)
 
 # smartdata-mcp is an independent opt-in sidecar, matching the host-mode

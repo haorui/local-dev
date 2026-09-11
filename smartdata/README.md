@@ -25,6 +25,15 @@ smartdb-installer，不由本目录替代。
 
 ## 四服务容器模式启动
 
+`SMARTDATA_DATA_DIR`、`SMARTDATA_BACKUP_DIR`、`SMARTDATA_SECRETS_DIR` 默认分别为
+`smartdata/` 下的 `.data/admin-data`、`.data/admin-backup`、`.data/admin-secrets`，
+持久化应用数据、备份文件和密钥文件，避免容器重建丢失，并与生产 installer 的卷布局对齐。
+`make smartdata-up` 会先创建这三个目录，再从 `SMARTDATA_ENV_FILE` 指向的文件读取
+`DB_ENCRYPT_KEY`，生成无末尾换行的 `database.key`（容器内只读挂载）；已有文件内容不同时会拒绝启动，
+绝不静默覆盖。只有通过生产 installer 的 `rotate-encrypt-key` 流程完成密钥轮换、
+并用新密钥重新加密已有静态数据后，才能安全地删除该文件，再执行下一次 `up` 重新生成。
+仅修改 `DB_ENCRYPT_KEY` 并删除该文件、而未执行上述轮换流程，会导致已有加密数据无法读取。
+
 ```bash
 # 在 local-dev 根目录执行
 cp smartdata/.env.example smartdata/.env
