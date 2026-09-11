@@ -331,6 +331,16 @@ services:
       - type: bind
         source: ${SMARTDATA_LOG_DIR:?set SMARTDATA_LOG_DIR in .env}
         target: /data/smartdata/logs
+      - type: bind
+        source: ${SMARTDATA_DATA_DIR:-./.data/admin-data}
+        target: /app/smartdb
+      - type: bind
+        source: ${SMARTDATA_BACKUP_DIR:-./.data/admin-backup}
+        target: /data/backup
+      - type: bind
+        source: ${SMARTDATA_SECRETS_DIR:-./.data/admin-secrets}
+        target: /run/secrets
+        read_only: true
     networks:
       - dev_db_network
     tmpfs:
