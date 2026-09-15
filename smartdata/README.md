@@ -33,6 +33,8 @@ smartdb-installer，不由本目录替代。
 绝不静默覆盖。只有通过生产 installer 的 `rotate-encrypt-key` 流程完成密钥轮换、
 并用新密钥重新加密已有静态数据后，才能安全地删除该文件，再执行下一次 `up` 重新生成。
 仅修改 `DB_ENCRYPT_KEY` 并删除该文件、而未执行上述轮换流程，会导致已有加密数据无法读取。
+`smartdata-admin` 容器内的 `/tmp` 是 tmpfs；`SMARTDATA_ENV_FILE` 指向的文件中的
+`LICENSE_PATH` / `APP_UPLOAD_DIR` 必须保持在 `/app/smartdb`（持久化的 `SMARTDATA_DATA_DIR` 挂载）下，或留空不设置，否则 `make smartdata-up` 会拒绝启动。
 
 ```bash
 # 在 local-dev 根目录执行
