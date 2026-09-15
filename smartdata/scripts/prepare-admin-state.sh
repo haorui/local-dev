@@ -46,6 +46,21 @@ mkdir -p -- "$data_dir" "$backup_dir" "$secrets_dir"
 DB_ENCRYPT_KEY=
 if [[ -f "$key_env_file" && -r "$key_env_file" ]]; then
   DB_ENCRYPT_KEY=$(read_value DB_ENCRYPT_KEY "$key_env_file")
+  LICENSE_PATH=$(read_value LICENSE_PATH "$key_env_file")
+  APP_UPLOAD_DIR=$(read_value APP_UPLOAD_DIR "$key_env_file")
+
+  tmpfs_path_error=0
+  if [[ "$LICENSE_PATH" == /tmp || "$LICENSE_PATH" == /tmp/* ]]; then
+    printf '%s\n' "LICENSE_PATH=$LICENSE_PATH in $key_env_file is on the container tmpfs (/tmp) and is lost on every restart; use a path under /app/smartdb (persisted SMARTDATA_DATA_DIR), e.g. /app/smartdb/license" >&2
+    tmpfs_path_error=1
+  fi
+  if [[ "$APP_UPLOAD_DIR" == /tmp || "$APP_UPLOAD_DIR" == /tmp/* ]]; then
+    printf '%s\n' "APP_UPLOAD_DIR=$APP_UPLOAD_DIR in $key_env_file is on the container tmpfs (/tmp) and is lost on every restart; use a path under /app/smartdb (persisted SMARTDATA_DATA_DIR), e.g. /app/smartdb/uploadPath" >&2
+    tmpfs_path_error=1
+  fi
+  if (( tmpfs_path_error )); then
+    exit 1
+  fi
 fi
 if [[ -z "$DB_ENCRYPT_KEY" ]]; then
   echo "DB_ENCRYPT_KEY missing in $key_env_file; needed for /run/secrets/database.key" >&2
