@@ -143,9 +143,10 @@ services:
       - /bin/sh
       - -ec
       - |
-        if [ ! -x /workspace/node_modules/.bin/tsx ]; then
-          pnpm install --frozen-lockfile --prod=false
-        fi
+        # node_modules is a named volume, so a first-run-only guard would keep
+        # serving a tree that predates any dependency added since. Installing on
+        # every boot costs seconds once the store volume is warm.
+        pnpm install --frozen-lockfile --prod=false
         exec pnpm dev
     healthcheck:
       test:
@@ -199,7 +200,12 @@ services:
       - /bin/sh
       - -ec
       - |
-        if [ ! -f /workspace/node_modules/.yarn-integrity ]; then
+        # Re-run when yarn.lock moved ahead of the installed tree: node_modules
+        # is a named volume that outlives the checkout. Unlike the pnpm services
+        # this block rewrites the bind-mounted package.json, so it stays guarded
+        # instead of running on every boot.
+        if [ ! -f /workspace/node_modules/.yarn-integrity ] \
+          || [ /workspace/yarn.lock -nt /workspace/node_modules/.yarn-integrity ]; then
           node adjustPackageJson
           yarn install --frozen-lockfile --ignore-scripts
           node resetPackagedPlugins
@@ -250,9 +256,9 @@ services:
       - /bin/sh
       - -ec
       - |
-        if [ ! -f /workspace/node_modules/.modules.yaml ]; then
-          pnpm install --frozen-lockfile
-        fi
+        # See smartdata-mcp: the first-run-only guard let this volume miss every
+        # dependency added after it was created (qrcode, 2026-09-19).
+        pnpm install --frozen-lockfile
         exec pnpm dev
     healthcheck:
       test:
