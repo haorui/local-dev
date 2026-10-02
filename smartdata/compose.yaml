@@ -1,4 +1,24 @@
 services:
+  exec-runner:
+    image: smartdata-exec-runner
+    build:
+      context: ${SMARTDATA_SOURCE_DIR:?set SMARTDATA_SOURCE_DIR in .env}/deployable/smartdata-exec-runner
+    environment:
+      # An unset secret keeps existing stack config usable; the runner refuses
+      # to start until a nonempty secret is provisioned.
+      EXEC_RUNNER_SECRET: ${EXEC_RUNNER_SECRET:-}
+      EXEC_RUNNER_SANDBOX_NETWORK: ${COMPOSE_PROJECT_NAME}_exec_sandbox
+      EXEC_RUNNER_CA_HOST_PATH: ${EXEC_RUNNER_CA_HOST_PATH:-${HOME}/.smartdata/dev/trusted-proxy/inbound-ca.pem}
+      EXEC_RUNNER_CONCURRENCY: ${EXEC_RUNNER_CONCURRENCY:-4}
+    volumes:
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        bind:
+          create_host_path: false
+    networks:
+      - dev_db_network
+
   trusted-proxy:
     build:
       context: .
@@ -81,6 +101,9 @@ services:
       timeout: 3s
       start_period: 30s
       retries: 3
+    networks:
+      - default
+      - exec_sandbox
 
   dbgate-web:
     image: nginx:1.27-alpine
@@ -376,6 +399,11 @@ volumes:
   smartdata-mcp-pnpm-store:
 
 networks:
+  default: {}
+  exec_sandbox:
+    # The Engine API needs the actual name, not the Compose network key.
+    name: ${COMPOSE_PROJECT_NAME}_exec_sandbox
+    internal: true
   dev_db_network:
     name: ${DEV_DB_NETWORK:-dev_db_network}
     external: true

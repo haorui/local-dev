@@ -15,7 +15,7 @@ Personal local development sandbox — docker compose recipes for the services S
 | `dns/` | adguard 本地 DNS（按需用） |
 | `kerberos/` | KDC，给 hive2/hive3 鉴权测试用 |
 | `vault/` | HashiCorp Vault 开发模式 |
-| `smartdata/` | SmartData 产品容器化开发配置（四服务 + 独立 MCP / Trusted Proxy） |
+| `smartdata/` | SmartData 产品容器化开发配置（四服务 + 独立 MCP / Trusted Proxy / exec runner） |
 | `archive/` | 已弃用栈的归档：`sso/`（老 UCC SSO）/ `smartfs/` / `mqtt/` / `minio/` / `traefik/` / `docs/`（redis 旧文档） |
 
 ## 服务拓扑 (dev.smartdata.local)
@@ -96,6 +96,11 @@ make smartdata-trusted-proxy-up
 make smartdata-trusted-proxy-down
 ```
 
+#2062 exec runner 也独立 opt-in，供容器内 admin 通过 `http://exec-runner:8080` 调用，
+不发布宿主机端口。`make smartdata-exec-runner-build` 构建 runner 和一次性 Python sandbox
+镜像；共享密钥、inbound CA、内部网络及 Java lane 的 env 交接见
+[smartdata/README.md](smartdata/README.md)。
+
 ### 起单个数据库
 
 每个 `db/<name>/` 目录都是独立 compose，按需起：
@@ -136,6 +141,8 @@ docker compose -f ai/langflow/docker-compose.yml up -d
 容器模式（smartdata-up/down/restart/logs/config/ps）。MCP sidecar 有独立的
 `smartdata-mcp-up/down/restart/logs` 目标；`SERVICE=<name>` 仍可用于四个核心
 服务的单服务启动、停止和查看日志。Trusted Proxy 也有独立目标。
+exec runner 镜像用 `smartdata-exec-runner-build` 构建（含 sandbox），sandbox 可用
+`smartdata-exec-sandbox-build` 单独构建；这些目标只构建，不启动服务。
 
 ## 约定
 
