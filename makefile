@@ -110,6 +110,18 @@ smartdata-trusted-proxy-down:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
 	@$(SMARTDATA_COMPOSE) stop trusted-proxy
 
+# Resolve the build context through Compose, so absolute paths, worktrees and
+# .env interpolation follow the same rules as the runner service.
+.PHONY: smartdata-exec-sandbox-build smartdata-exec-runner-build
+smartdata-exec-sandbox-build:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@runner_context=$$($(SMARTDATA_COMPOSE) config --format json | \
+	  python3 -c 'import json, sys; print(json.load(sys.stdin)["services"]["exec-runner"]["build"]["context"])') && \
+	  docker build -t smartdata-exec-sandbox "$$runner_context/sandbox"
+
+smartdata-exec-runner-build: smartdata-exec-sandbox-build
+	@$(SMARTDATA_COMPOSE) build exec-runner
+
 # topology SSOT drift check (manual, low-frequency)
 .PHONY: check-topology
 check-topology:
