@@ -51,6 +51,10 @@ cp smartdata/.env.example smartdata/.env
 # 如需使用 worktree，把 SMARTDATA_SOURCE_DIR 改成例如：
 # ../../smartdata/.worktrees/<worktree-name>
 
+# 为 smartdata-admin 生成 RS256 access-token 签名密钥：
+../smartdata/scripts/dev-init-token-signing.sh
+# zonesec/smartdata#2105 合入后，admin 要求此目录包含与 active kid 匹配的 <kid>.pem，否则会拒绝启动。
+
 # 先确认 pgvector、redis-service-1 已加入 dev_db_network
 # dbgate-web 沿用 make dev：先在宿主机完成 public 打包
 (cd ../dbgate && yarn build:web)

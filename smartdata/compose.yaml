@@ -315,6 +315,7 @@ services:
       REDIS_HOST: smartdata-redis
       REDIS_PORT: 6379
       AUTH_RSA_KEY_DIR: /run/smartdata/auth-rsa
+      TOKEN_SIGNING_KEY_DIR: /run/smartdata/token-signing
       ONTOLOGY_REPO_PATH: /run/smartdata/ontology
       LOG_PATH: /data/smartdata/logs
       SMARTDATA_TRUSTED_PROXY_RELEASE_SERVER_PORT: 8444
@@ -338,6 +339,10 @@ services:
       - type: bind
         source: ${SMARTDATA_AUTH_RSA_DIR:?set SMARTDATA_AUTH_RSA_DIR in .env}
         target: /run/smartdata/auth-rsa
+        read_only: true
+      - type: bind
+        source: ${SMARTDATA_TOKEN_SIGNING_DIR:-${HOME}/.smartdata/dev/token-signing}
+        target: /run/smartdata/token-signing
         read_only: true
       - type: bind
         source: ${SMARTDATA_ONTOLOGY_DIR:?set SMARTDATA_ONTOLOGY_DIR in .env}
