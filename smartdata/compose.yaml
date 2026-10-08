@@ -303,6 +303,8 @@ services:
     env_file:
       - ${SMARTDATA_ENV_FILE:?set SMARTDATA_ENV_FILE in .env}
     environment:
+      # match the installer (smartdb-installer compose/yml/smartdata-admin.yml); the JVM default zone follows TZ
+      TZ: ${TZ:-Asia/Shanghai}
       PORT: 8084
       JAVA_HOME: /opt/java/openjdk
       PATH: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

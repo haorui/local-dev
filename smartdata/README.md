@@ -35,6 +35,7 @@ smartdb-installer，不由本目录替代。
 仅修改 `DB_ENCRYPT_KEY` 并删除该文件、而未执行上述轮换流程，会导致已有加密数据无法读取。
 `smartdata-admin` 容器内的 `/tmp` 是 tmpfs；`SMARTDATA_ENV_FILE` 指向的文件中的
 `LICENSE_PATH` / `APP_UPLOAD_DIR` 必须保持在 `/app/smartdb`（持久化的 `SMARTDATA_DATA_DIR` 挂载）下，或留空不设置，否则 `make smartdata-up` 会拒绝启动。
+`smartdata-admin` 的 `TZ` 默认是 `Asia/Shanghai`，与生产 installer 一致；可通过 `TZ` 环境变量覆盖，JVM 默认时区随之设置。
 
 ```bash
 # 在 local-dev 根目录执行
