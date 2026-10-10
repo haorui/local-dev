@@ -37,15 +37,12 @@ services:
       TRUSTED_PROXY_RELEASE_TRUST_ANCHOR_PATH: /run/smartdata/trusted-proxy/control-plane-ca.pem
       TRUSTED_PROXY_TLS_BUNDLE_PATH: /run/smartdata/trusted-proxy/bundle.pem
       TRUSTED_PROXY_TLS_KEY_PATH: /run/smartdata/trusted-proxy/bundle-key.pem
-      TRUSTED_PROXY_LISTEN_PORT: 8443
       TRUSTED_PROXY_MGMT_PORT: 8087
-      TRUSTED_PROXY_BIND_ADDRESS: 0.0.0.0
       TRUSTED_PROXY_FORWARD_PROXY_ENABLED: ${TRUSTED_PROXY_FORWARD_PROXY_ENABLED:-false}
       TRUSTED_PROXY_FORWARD_PROXY_PORT: 3128
       TRUSTED_PROXY_FORWARD_PROXY_BIND_ADDRESS: 0.0.0.0
       LOG_PATH: /data/smartdb/logs
     ports:
-      - "127.0.0.1:${TP_HOST_LISTEN_PORT:-8443}:8443"
       - "127.0.0.1:${TP_HOST_MGMT_PORT:-8087}:8087"
       - "127.0.0.1:${TP_HOST_FORWARD_PROXY_PORT:-3128}:3128"
     volumes:

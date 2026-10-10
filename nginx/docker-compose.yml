@@ -11,7 +11,6 @@ services:
     ports:
       - "80:80"
       - "443:443"
-      - "8446:8446"
       # leap-aide MCP-app sandbox origin (browser hits https://prod.smartdata.local:18790; contract §2 of leap-aide web-tier-deployment.md)
       - "18790:18790"
     # environment:
