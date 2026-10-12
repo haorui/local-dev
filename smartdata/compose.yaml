@@ -393,6 +393,65 @@ services:
       start_period: 60s
       retries: 5
 
+  smartdata-proxy:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /workspace
+    user: "${SMARTDATA_DEV_UID:-1000}:${SMARTDATA_DEV_GID:-1000}"
+    # Unlike trusted-proxy, this proxy needs DB_ENCRYPT_KEY to decrypt backend passwords.
+    env_file:
+      - ${SMARTDATA_ENV_FILE:?set SMARTDATA_ENV_FILE in .env}
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      JAVA_HOME: /opt/java/openjdk
+      PATH: /opt/java/openjdk/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      MAVEN_OPTS: ${SMARTDATA_MAVEN_OPTS:--Xmx768m -XX:MaxMetaspaceSize=384m}
+      JAVA_TOOL_OPTIONS: ${SMARTDATA_PROXY_JAVA_TOOL_OPTIONS:--Xms128m -Xmx512m}
+      SMARTDATA_SKIP_BUILD: ${SMARTDATA_SKIP_BUILD:-false}
+      REDIS_HOST: smartdata-redis
+      REDIS_PORT: 6379
+      PROXY_MGMT_PORT: 8085
+      LOG_PATH: /data/smartdata/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "127.0.0.1:${SMARTDATA_PROXY_MGMT_HOST_PORT:-18085}:8085"
+      # Route ports outside this range listen in the container but are unreachable from the host.
+      - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${SMARTDATA_PROXY_PORT_RANGE:-10010-10019}:${SMARTDATA_PROXY_PORT_RANGE:-10010-10019}"
+    volumes:
+      - type: bind
+        source: ${SMARTDATA_SOURCE_DIR:?set SMARTDATA_SOURCE_DIR in .env}
+        target: /workspace
+      - type: volume
+        source: maven-cache
+        target: /maven-cache
+      - type: bind
+        source: ${SMARTDATA_DRIVERS_DIR:?set SMARTDATA_DRIVERS_DIR in .env}
+        target: /home/ubuntu/.smartdata/drivers
+      - type: bind
+        source: ${SMARTDATA_LOG_DIR:?set SMARTDATA_LOG_DIR in .env}
+        target: /data/smartdata/logs
+    networks:
+      - dev_db_network
+    tmpfs:
+      - /tmp:mode=1777
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        if [ "$${SMARTDATA_SKIP_BUILD:-false}" != "true" ] || [ ! -f deployable/smartdata-proxy-server/target/smartdata-proxy-server.jar ]; then
+          mvn -Dmaven.repo.local=/maven-cache/repository package -pl deployable/smartdata-proxy-server -am -DskipTests
+        fi
+        exec java -jar deployable/smartdata-proxy-server/target/smartdata-proxy-server.jar
+    healthcheck:
+      # The proxy jar has no actuator; any HTTP answer on 8085 means the JVM and its web server are up.
+      test: ["CMD-SHELL", "curl -sS -o /dev/null http://127.0.0.1:8085/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+
 volumes:
   maven-cache:
   dbgate-yarn-node-modules:

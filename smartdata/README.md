@@ -2,7 +2,7 @@
 
 本目录是 SmartData 产品开发环境的容器化配置入口，承载四个核心开发服务：
 SmartData admin、dbmanager、dbgate-api、dbgate-web，以及独立 opt-in 的
-`smartdata-mcp`、`smartdata-trusted-proxy` 和 `exec-runner`。
+`smartdata-mcp`、`smartdata-proxy`、`smartdata-trusted-proxy` 和 `exec-runner`。
 
 ## 边界
 
@@ -104,6 +104,32 @@ admin 容器默认（`SMARTDATA_SKIP_BUILD=true`）不在容器内编译，直�
 jar 不存在时容器仍会自动回退到容器内 Maven 编译（受下方 Maven/Java 堆限制）。
 dbgate-web 容器只托管已生成的 `packages/web/public`；修改前端源码后，在宿主机
 重新执行 `yarn build:web` 即可，容器无需重新安装依赖。
+
+## SmartData 数据面代理（独立 opt-in）
+
+`smartdata-proxy` 运行 Hive Thrift 透明代理，通过 `SMARTDATA_SOURCE_DIR` 挂载源码，
+启动 `deployable/smartdata-proxy-server/target/smartdata-proxy-server.jar`；不随
+`make smartdata-up` 启动。admin 侧需在 `SMARTDATA_ENV_FILE` 中设置
+`SMARTDATA_PROXY_ENABLED=true`，将数据源路由同步到 Redis。
+代理通过 `dev_db_network` 访问 `smartdata-redis:6379`，从同一 env 文件读取
+`REDIS_PASSWORD` 和 `DB_ENCRYPT_KEY`；与 Trusted Proxy 不同，它需要后者解密后端密码。
+JDBC 驱动沿用 `SMARTDATA_DRIVERS_DIR`，挂载到 `/home/ubuntu/.smartdata/drivers`。
+
+管理端口默认仅发布到 `127.0.0.1:18085`（`SMARTDATA_PROXY_MGMT_HOST_PORT`）。
+数据面按 admin 分配的路由端口监听，通过 `SMARTDATA_PROXY_PORT_RANGE` 将同一端口范围
+发布到宿主机，默认 `10010-10019`；范围外的路由端口只在容器内监听，宿主机无法访问。
+可用 `SMARTDATA_PROXY_JAVA_TOOL_OPTIONS` 调整 JVM 内存，默认 `-Xms128m -Xmx512m`。
+
+```bash
+make smartdata-proxy-up
+make smartdata-proxy-logs
+make smartdata-proxy-restart
+make smartdata-proxy-down
+# 改完 Java 代码后，宿主机打包并仅重启代理；不执行 mvn clean
+make smartdata-proxy-rebuild
+```
+
+`SMARTDATA_SKIP_BUILD=true` 时使用已有 jar；jar 不存在时回退到容器内 Maven 编译。
 
 ## Trusted Proxy（独立 opt-in）
 
