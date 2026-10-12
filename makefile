@@ -99,6 +99,31 @@ smartdata-ps:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
 	@$(SMARTDATA_COMPOSE) ps $(SMARTDATA_SERVICES)
 
+# Data-plane proxy is opt-in outside smartdata-up; admin needs SMARTDATA_PROXY_ENABLED=true in SMARTDATA_ENV_FILE to sync routes to Redis.
+.PHONY: smartdata-proxy-up smartdata-proxy-down smartdata-proxy-restart smartdata-proxy-logs smartdata-proxy-rebuild
+smartdata-proxy-up:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@docker network inspect "$(SMARTDATA_NETWORK)" >/dev/null 2>&1 || (echo "Docker network '$(SMARTDATA_NETWORK)' is missing; start the selected db/Redis stack first" >&2; exit 1)
+	@$(SMARTDATA_COMPOSE) up --build -d smartdata-proxy
+
+smartdata-proxy-down:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@$(SMARTDATA_COMPOSE) stop smartdata-proxy
+
+smartdata-proxy-restart:
+	@$(MAKE) smartdata-proxy-down
+	@$(MAKE) smartdata-proxy-up
+
+smartdata-proxy-logs:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@$(SMARTDATA_COMPOSE) logs -f smartdata-proxy
+
+smartdata-proxy-rebuild:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@cd ./smartdata/$$(sed -n 's/^SMARTDATA_SOURCE_DIR=//p' ./smartdata/.env) && \
+	  mvn -q package -pl deployable/smartdata-proxy-server -am -Dmaven.test.skip=true
+	@$(MAKE) smartdata-proxy-restart
+
 # Trusted Proxy remains a separate opt-in container, outside smartdata-up.
 .PHONY: smartdata-trusted-proxy-up
 smartdata-trusted-proxy-up:
