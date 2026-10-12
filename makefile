@@ -37,6 +37,8 @@ redis-sentinel-down:
 SMARTDATA_NETWORK ?= dev_db_network
 SMARTDATA_SERVICES := smartdata-admin dbmanager dbgate-api dbgate-web
 SMARTDATA_SERVICE_ARGS = $(if $(SERVICE),$(SERVICE),$(SMARTDATA_SERVICES))
+# Rebuild targets swap only the bind-mounted jar, so they restart with --no-build.
+SMARTDATA_UP_BUILD ?= --build
 SMARTDATA_COMPOSE = DEV_DB_NETWORK=$(SMARTDATA_NETWORK) docker compose --env-file ./smartdata/.env -f ./smartdata/compose.yaml
 
 .PHONY: smartdata-up smartdata-mcp-up smartdata-mcp-down smartdata-mcp-restart smartdata-mcp-logs
@@ -44,7 +46,7 @@ smartdata-up:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
 	@docker network inspect "$(SMARTDATA_NETWORK)" >/dev/null 2>&1 || (echo "Docker network '$(SMARTDATA_NETWORK)' is missing; start the selected db/Redis stack first" >&2; exit 1)
 	@./smartdata/scripts/prepare-admin-state.sh ./smartdata/.env
-	@$(SMARTDATA_COMPOSE) up --build -d $(SMARTDATA_SERVICE_ARGS)
+	@$(SMARTDATA_COMPOSE) up $(SMARTDATA_UP_BUILD) -d $(SMARTDATA_SERVICE_ARGS)
 
 # smartdata-mcp is an independent opt-in sidecar, matching the host-mode
 # dev-smartdata-mcp target without pulling it into the four-service core stack.
@@ -81,8 +83,9 @@ smartdata-restart:
 .PHONY: smartdata-admin-rebuild
 smartdata-admin-rebuild:
 	@cd ./smartdata/$$(sed -n 's/^SMARTDATA_SOURCE_DIR=//p' ./smartdata/.env) && \
+	  rm -f deployable/smartdata-admin/target/smartdata-admin.jar deployable/smartdata-admin/target/smartdata-admin.jar.original && \
 	  mvn -q package -pl deployable/smartdata-admin -am -Dmaven.test.skip=true
-	@$(MAKE) smartdata-restart SERVICE=smartdata-admin
+	@$(MAKE) smartdata-restart SERVICE=smartdata-admin SMARTDATA_UP_BUILD=--no-build
 
 .PHONY: smartdata-logs
 smartdata-logs:
@@ -104,7 +107,7 @@ smartdata-ps:
 smartdata-proxy-up:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
 	@docker network inspect "$(SMARTDATA_NETWORK)" >/dev/null 2>&1 || (echo "Docker network '$(SMARTDATA_NETWORK)' is missing; start the selected db/Redis stack first" >&2; exit 1)
-	@$(SMARTDATA_COMPOSE) up --build -d smartdata-proxy
+	@$(SMARTDATA_COMPOSE) up $(SMARTDATA_UP_BUILD) -d smartdata-proxy
 
 smartdata-proxy-down:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
@@ -121,8 +124,9 @@ smartdata-proxy-logs:
 smartdata-proxy-rebuild:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
 	@cd ./smartdata/$$(sed -n 's/^SMARTDATA_SOURCE_DIR=//p' ./smartdata/.env) && \
+	  rm -f deployable/smartdata-proxy-server/target/smartdata-proxy-server.jar deployable/smartdata-proxy-server/target/smartdata-proxy-server.jar.original && \
 	  mvn -q package -pl deployable/smartdata-proxy-server -am -Dmaven.test.skip=true
-	@$(MAKE) smartdata-proxy-restart
+	@$(MAKE) smartdata-proxy-restart SMARTDATA_UP_BUILD=--no-build
 
 # Trusted Proxy remains a separate opt-in container, outside smartdata-up.
 .PHONY: smartdata-trusted-proxy-up
