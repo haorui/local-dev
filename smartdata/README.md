@@ -102,6 +102,9 @@ admin 容器默认（`SMARTDATA_SKIP_BUILD=true`）不在容器内编译，直�
 `target/smartdata-admin.jar`。改完 Java 代码后在宿主机执行
 `make smartdata-admin-rebuild`（宿主机 `mvn package` + 仅重启 admin 容器）；
 jar 不存在时容器仍会自动回退到容器内 Maven 编译（受下方 Maven/Java 堆限制）。
+rebuild 会先删掉旧 jar 再打包：Spring Boot repackage 遇到已重打包过的 jar 会跳过，
+只改了上游模块时新代码进不了 fat jar。重启用 `--no-build`，不重建镜像，
+镜像源不可用时也能重启；改了 `Dockerfile.dev` 需要重建镜像时，用 `make smartdata-up`。
 dbgate-web 容器只托管已生成的 `packages/web/public`；修改前端源码后，在宿主机
 重新执行 `yarn build:web` 即可，容器无需重新安装依赖。
 
@@ -130,6 +133,7 @@ make smartdata-proxy-rebuild
 ```
 
 `SMARTDATA_SKIP_BUILD=true` 时使用已有 jar；jar 不存在时回退到容器内 Maven 编译。
+`smartdata-proxy-rebuild` 与 admin 相同：先删旧 jar，再以 `--no-build` 重启。
 
 ## Trusted Proxy（独立 opt-in）
 
