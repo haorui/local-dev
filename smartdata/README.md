@@ -119,6 +119,8 @@ dbgate-web 容器只托管已生成的 `packages/web/public`；修改前端源�
 JDBC 驱动沿用 `SMARTDATA_DRIVERS_DIR`，挂载到 `/home/ubuntu/.smartdata/drivers`。
 
 管理端口默认仅发布到 `127.0.0.1:18085`（`SMARTDATA_PROXY_MGMT_HOST_PORT`）。
+容器健康检查请求 `/actuator/health/readiness`，Redis 不可达时容器显示 `unhealthy`；
+需要 smartdata `main` 已包含 proxy actuator（smartdata#2193），更早的 jar 没有该端点。
 数据面按 admin 分配的路由端口监听，通过 `SMARTDATA_PROXY_PORT_RANGE` 将同一端口范围
 发布到宿主机，默认 `10010-10019`；范围外的路由端口只在容器内监听，宿主机无法访问。
 可用 `SMARTDATA_PROXY_JAVA_TOOL_OPTIONS` 调整 JVM 内存，默认 `-Xms128m -Xmx512m`。

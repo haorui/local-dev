@@ -445,10 +445,11 @@ services:
         fi
         exec java -jar deployable/smartdata-proxy-server/target/smartdata-proxy-server.jar
     healthcheck:
-      # The proxy jar has no actuator; any HTTP answer on 8085 means the JVM and its web server are up.
-      test: ["CMD-SHELL", "curl -sS -o /dev/null http://127.0.0.1:8085/ || exit 1"]
+      # Readiness includes Redis because routes only come from Redis. With Redis unreachable the
+      # probe waits for Lettuce's 10s command timeout before answering 503, so timeout must exceed it.
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8085/actuator/health/readiness"]
       interval: 15s
-      timeout: 5s
+      timeout: 15s
       start_period: 60s
       retries: 5
 
