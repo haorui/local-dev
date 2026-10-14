@@ -1,7 +1,7 @@
 services:
   trino:
-    image: trinodb/trino:454
-    container_name: trino_454
+    image: trinodb/trino:483
+    container_name: trino_483
     restart: unless-stopped
     ports:
       - "4454:8080"
