@@ -108,6 +108,25 @@ rebuild 会先删掉旧 jar 再打包：Spring Boot repackage 遇到已重打包
 dbgate-web 容器只托管已生成的 `packages/web/public`；修改前端源码后，在宿主机
 重新执行 `yarn build:web` 即可，容器无需重新安装依赖。
 
+## dbgate 受管任务与双副本
+
+`dbgate-api`（:3000）和 `dbgate-api-2`（:3001，`DBGATE_API_2_HOST_PORT`）随核心栈一起启动，
+共享 named volume `dbgate-task-storage`（挂载在 `/task-storage`），用于验证 dbgate#227 受管导入导出任务的跨实例行为。
+`dbgate-api-2` 等 `dbgate-api` 健康后才启动，避免两个容器同时对共享的 node_modules volume 执行 `yarn install`。
+
+全新 volume 首次启动后，执行一次存储标记初始化（幂等；非空且无标记的 volume 会被拒绝）：
+
+```bash
+make dbgate-task-storage-init
+```
+
+未初始化时，两个副本的 `/config/get` 都会返回 `managedTasks.available=false`，任务接口返回 503 `TASK_STORAGE_UNINITIALIZED`；
+初始化后约 5 秒内自动恢复，无需重启。关闭功能：在 `.env` 中设置 `DBGATE_MANAGED_TASKS_ENABLED=0`。
+`make smartdata-down` 只停容器，不删除 volume；任务文件与标记会一直保留。
+
+不要通过修改 `DBGATE_SOURCE_DIR` 让容器临时运行另一个 worktree：两个 dbgate 容器共享 node_modules volume，
+`yarn.lock` 时间戳变化会触发重新安装并可能使两个容器都启动失败。
+
 ## SmartData 数据面代理（独立 opt-in）
 
 `smartdata-proxy` 运行 Hive Thrift 透明代理，通过 `SMARTDATA_SOURCE_DIR` 挂载源码，

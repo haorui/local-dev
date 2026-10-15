@@ -35,7 +35,7 @@ redis-sentinel-down:
 # SmartData container-mode development. This is intentionally independent from
 # ../smartdata/make dev, which remains the host/tmux development workflow.
 SMARTDATA_NETWORK ?= dev_db_network
-SMARTDATA_SERVICES := smartdata-admin dbmanager dbgate-api dbgate-web
+SMARTDATA_SERVICES := smartdata-admin dbmanager dbgate-api dbgate-api-2 dbgate-web
 SMARTDATA_SERVICE_ARGS = $(if $(SERVICE),$(SERVICE),$(SMARTDATA_SERVICES))
 # Rebuild targets swap only the bind-mounted jar, so they restart with --no-build.
 SMARTDATA_UP_BUILD ?= --build
@@ -96,6 +96,13 @@ smartdata-logs:
 smartdata-config:
 	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
 	@$(SMARTDATA_COMPOSE) config --quiet
+
+# One-time provisioning of the dbgate managed-task storage marker on the shared
+# dbgate-task-storage volume. Idempotent; refuses a non-empty unmarked volume.
+.PHONY: dbgate-task-storage-init
+dbgate-task-storage-init:
+	@test -f ./smartdata/.env || (echo 'smartdata/.env is missing; copy smartdata/.env.example first' >&2; exit 1)
+	@$(SMARTDATA_COMPOSE) exec dbgate-api node packages/api/src/tasks/initTaskStorage.js --root /task-storage
 
 .PHONY: smartdata-ps
 smartdata-ps:
