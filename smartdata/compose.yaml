@@ -198,6 +198,12 @@ services:
       DB_DATABASE: ${DBGATE_DB_DATABASE:-smartdata_dev}
       REDIS_HOST: smartdata-redis
       REDIS_PORT: 6379
+      # Managed runner tasks (dbgate#227). Shared storage must carry the marker:
+      # run `make dbgate-task-storage-init` once on a fresh volume.
+      DBGATE_MANAGED_TASKS_ENABLED: ${DBGATE_MANAGED_TASKS_ENABLED:-1}
+      DBGATE_TASK_STORAGE_DIR: /task-storage
+      DBGATE_TASK_SCRIPT_DIR: /tmp/dbgate-task-scripts
+      DBGATE_TASK_CLEANUP_MS: ${DBGATE_TASK_CLEANUP_MS:-600000}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -212,6 +218,9 @@ services:
       - type: volume
         source: dbgate-yarn-cache
         target: /yarn-cache
+      - type: volume
+        source: dbgate-task-storage
+        target: /task-storage
     networks:
       - dev_db_network
     tmpfs:
@@ -242,6 +251,18 @@ services:
       timeout: 5s
       start_period: 25s
       retries: 3
+
+  # Second API replica for cross-instance managed-task checks; shares the task
+  # volume and node_modules. Waits for dbgate-api so only one container ever
+  # runs the guarded yarn install against the shared node_modules volume.
+  dbgate-api-2:
+    extends:
+      service: dbgate-api
+    ports: !override
+      - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${DBGATE_API_2_HOST_PORT:-3001}:3000"
+    depends_on:
+      dbgate-api:
+        condition: service_healthy
 
   dbmanager:
     build:
@@ -457,6 +478,9 @@ volumes:
   maven-cache:
   dbgate-yarn-node-modules:
   dbgate-yarn-cache:
+  # Fixed name so the provisioned marker and task files survive project renames.
+  dbgate-task-storage:
+    name: dbgate-task-storage
   dbmanager-pnpm-node-modules:
   dbmanager-pnpm-store:
   smartdata-mcp-pnpm-node-modules:
