@@ -346,6 +346,11 @@ services:
       PLATFORM_HEARTBEAT_EDITOR_URL: ${PLATFORM_HEARTBEAT_EDITOR_URL:-http://dbgate-api:3000/health}
     extra_hosts:
       - "host.docker.internal:host-gateway"
+      # dev.smartdata.local otherwise resolves to this container's own loopback.
+      # Point it at the local-dev nginx (dev_db_network) so admin can reach
+      # HTTPS routes such as /aide-admin/scim/ (smartdata#2440 SCIM push).
+      # Static IP: re-check with `docker inspect nginx` if nginx is recreated.
+      - "dev.smartdata.local:${SMARTDATA_DEV_NGINX_IP:-172.18.0.2}"
     ports:
       - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${SMARTDATA_ADMIN_HOST_PORT:-8084}:8084"
       - "${SMARTDATA_BIND_ADDRESS:-0.0.0.0}:${SMARTDATA_RELEASE_HOST_PORT:-8444}:8444"
