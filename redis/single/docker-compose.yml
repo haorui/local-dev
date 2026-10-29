@@ -12,6 +12,13 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
       - data:/data
+    # PING fails with MISCONF when persistence writes fail (e.g. disk full).
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a 'Zonesec2024.' ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   data:
