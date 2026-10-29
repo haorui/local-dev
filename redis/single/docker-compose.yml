@@ -1,8 +1,13 @@
 services:
   service:
     image: redis:7.2-alpine3.18
-    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    # The shell expands REDIS_PASSWORD inside the container, so the password
+    # stays out of the container's stored command.
+    command: ["sh", "-c", "exec redis-server /usr/local/etc/redis/redis.conf --requirepass \"$$REDIS_PASSWORD\""]
     restart: always
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in redis/single/.env}
+      REDISCLI_AUTH: ${REDIS_PASSWORD}
     networks:
       dev_db_network:
         aliases:
@@ -12,6 +17,14 @@ services:
     volumes:
       - ./redis.conf:/usr/local/etc/redis/redis.conf
       - data:/data
+    # PING fails with MISCONF when persistence writes fail (e.g. disk full).
+    # redis-cli authenticates from REDISCLI_AUTH, keeping the password out of argv.
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   data:
